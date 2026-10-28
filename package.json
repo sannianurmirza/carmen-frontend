@@ -1,0 +1,28 @@
+{
+  "name": "punishment-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "postbuild": "node scripts/sync-export.js",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "test": "node --no-warnings --test --experimental-strip-types tests/login_basepath.test.ts tests/color_contrast.test.ts tests/audit_types.test.ts tests/calorie_settings.test.ts tests/settings_internal_sidebar.test.ts tests/calorie_weight_separation.test.ts tests/settings_app_shell.test.ts tests/weight_matrix_and_new_master.test.ts tests/calorie_input_master_only.test.ts tests/admin_reset_password.test.ts tests/carmen_branding.test.ts tests/master_data_delete.test.ts tests/send_report.test.ts tests/approval_module.test.ts tests/role_separation.test.ts tests/smtp_settings_redesign.test.ts tests/smtp_testing_temporary.test.ts tests/reward_punishment.test.ts tests/notification_system.test.ts"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.383.0",
+    "next": "14.2.35",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "typescript": "^5"
+  }
+}

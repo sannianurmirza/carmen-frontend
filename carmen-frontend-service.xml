@@ -1,0 +1,12 @@
+<service>
+  <id>carmen-frontend</id>
+  <name>CARMEN Frontend Service</name>
+  <description>Production Next.js Background Daemon for CARMEN Catering System</description>
+  <executable>node.exe</executable>
+  <arguments>node_modules/next/dist/bin/next start -p 3000</arguments>
+  <workingdirectory>C:\xampp\htdocs\carmen\frontend</workingdirectory>
+  <logmode>rotate</logmode>
+  <logpath>C:\xampp\htdocs\carmen\frontend\logs</logpath>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+</service>
