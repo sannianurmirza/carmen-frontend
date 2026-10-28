@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   QrCode,
   RefreshCw,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -29,6 +31,8 @@ import {
   updateUserStatusApi,
   resetUserPasswordApi,
   resetUserSignatureApi,
+  updateUserApi,
+  deleteUserApi,
 } from "@/lib/api";
 
 export default function UserManagementTab() {
@@ -81,6 +85,107 @@ export default function UserManagementTab() {
   const [resetQrNote, setResetQrNote] = useState("");
   const [resetQrLoading, setResetQrLoading] = useState(false);
   const [resetQrError, setResetQrError] = useState<string | null>(null);
+
+  // Modal Edit User (Admin only)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [targetEditUser, setTargetEditUser] = useState<AuthUser | null>(null);
+  const [editNama, setEditNama] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState<"admin" | "staff" | "approver">("staff");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Modal Hapus User (Admin only)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [targetDeleteUser, setTargetDeleteUser] = useState<AuthUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleOpenEditModal = (u: AuthUser) => {
+    setTargetEditUser(u);
+    setEditNama(u.nama);
+    setEditUsername(u.username);
+    setEditEmail(u.email || "");
+    setEditRole((u.role as "admin" | "staff" | "approver") || "staff");
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetEditUser || editLoading) return;
+
+    if (!editNama.trim()) {
+      setEditError("Nama lengkap wajib diisi.");
+      return;
+    }
+    if (!editUsername.trim()) {
+      setEditError("Username wajib diisi.");
+      return;
+    }
+    if (editUsername.trim().length < 3) {
+      setEditError("Username minimal 3 karakter.");
+      return;
+    }
+
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      await updateUserApi(targetEditUser.id, {
+        nama: editNama.trim(),
+        username: editUsername.trim(),
+        email: editEmail.trim() || undefined,
+        role: editRole,
+      });
+
+      showToast({
+        type: "success",
+        title: "Pengguna Diperbarui",
+        message: `Data pengguna '${editNama.trim()}' berhasil disimpan.`,
+      });
+
+      setShowEditModal(false);
+      setTargetEditUser(null);
+      loadUsers();
+    } catch (err: any) {
+      setEditError(err.message || "Gagal memperbarui pengguna.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleOpenDeleteModal = (u: AuthUser) => {
+    setTargetDeleteUser(u);
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!targetDeleteUser || deleteLoading) return;
+
+    setDeleteLoading(true);
+    setDeleteError(null);
+
+    try {
+      await deleteUserApi(targetDeleteUser.id);
+
+      showToast({
+        type: "success",
+        title: "Pengguna Dihapus",
+        message: `Pengguna '${targetDeleteUser.nama}' berhasil dihapus.`,
+      });
+
+      setShowDeleteModal(false);
+      setTargetDeleteUser(null);
+      loadUsers();
+    } catch (err: any) {
+      setDeleteError(err.message || "Gagal menghapus pengguna.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -557,7 +662,7 @@ export default function UserManagementTab() {
                 <th style={{ padding: "12px 16px", fontWeight: 700, color: "var(--text, #334155)", width: 200, textAlign: "center" }}>
                   QR TANDA TANGAN
                 </th>
-                <th style={{ padding: "12px 16px", fontWeight: 700, color: "var(--text, #334155)", width: 180, textAlign: "center" }}>
+                <th style={{ padding: "12px 16px", fontWeight: 700, color: "var(--text, #334155)", minWidth: 280, textAlign: "center" }}>
                   AKSI
                 </th>
               </tr>
@@ -796,7 +901,29 @@ export default function UserManagementTab() {
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <div style={{ display: "inline-flex", gap: 6 }}>
+                      <div style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(u)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "5px 9px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            backgroundColor: "rgba(59, 130, 246, 0.08)",
+                            color: "#2563eb",
+                            border: "1px solid rgba(59, 130, 246, 0.25)",
+                            borderRadius: 4,
+                            cursor: "pointer",
+                          }}
+                          title="Edit Data Pengguna"
+                        >
+                          <Pencil size={12} />
+                          <span>Edit</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleOpenResetModal(u)}
@@ -804,7 +931,7 @@ export default function UserManagementTab() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 4,
-                            padding: "5px 10px",
+                            padding: "5px 9px",
                             fontSize: 11,
                             fontWeight: 600,
                             backgroundColor: "var(--bg-main, #f1f5f9)",
@@ -816,12 +943,14 @@ export default function UserManagementTab() {
                           title="Reset Password Pengguna"
                         >
                           <RotateCcw size={12} />
-                          <span>Reset Password</span>
+                          <span>Reset</span>
                         </button>
 
                         <button
                           type="button"
+                          disabled={u.id === currentUser?.id}
                           onClick={() => {
+                            if (u.id === currentUser?.id) return;
                             setTargetStatusUser(u);
                             setStatusError(null);
                             setShowStatusModal(true);
@@ -830,25 +959,75 @@ export default function UserManagementTab() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 4,
-                            padding: "5px 10px",
+                            padding: "5px 9px",
                             fontSize: 11,
                             fontWeight: 600,
-                            backgroundColor: u.is_active
+                            backgroundColor: u.id === currentUser?.id
+                              ? "rgba(100, 116, 139, 0.06)"
+                              : u.is_active
                               ? "rgba(220, 38, 38, 0.08)"
                               : "rgba(34, 197, 94, 0.08)",
-                            color: u.is_active ? "#dc2626" : "#16a34a",
+                            color: u.id === currentUser?.id
+                              ? "#94a3b8"
+                              : u.is_active
+                              ? "#dc2626"
+                              : "#16a34a",
                             border: `1px solid ${
-                              u.is_active
+                              u.id === currentUser?.id
+                                ? "rgba(100, 116, 139, 0.2)"
+                                : u.is_active
                                 ? "rgba(220, 38, 38, 0.25)"
                                 : "rgba(34, 197, 94, 0.25)"
                             }`,
                             borderRadius: 4,
-                            cursor: "pointer",
+                            cursor: u.id === currentUser?.id ? "not-allowed" : "pointer",
                           }}
-                          title={u.is_active ? "Nonaktifkan Akun" : "Aktifkan Akun"}
+                          title={
+                            u.id === currentUser?.id
+                              ? "Anda tidak dapat menonaktifkan akun sendiri"
+                              : u.is_active
+                              ? "Nonaktifkan Akun"
+                              : "Aktifkan Akun"
+                          }
                         >
                           <Power size={12} />
                           <span>{u.is_active ? "Nonaktifkan" : "Aktifkan"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={u.id === currentUser?.id}
+                          onClick={() => {
+                            if (u.id === currentUser?.id) return;
+                            handleOpenDeleteModal(u);
+                          }}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "5px 9px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            backgroundColor: u.id === currentUser?.id
+                              ? "rgba(100, 116, 139, 0.06)"
+                              : "rgba(220, 38, 38, 0.08)",
+                            color: u.id === currentUser?.id ? "#94a3b8" : "#dc2626",
+                            border: `1px solid ${
+                              u.id === currentUser?.id
+                                ? "rgba(100, 116, 139, 0.2)"
+                                : "rgba(220, 38, 38, 0.25)"
+                            }`,
+                            borderRadius: 4,
+                            cursor: u.id === currentUser?.id ? "not-allowed" : "pointer",
+                          }}
+                          title={
+                            u.id === currentUser?.id
+                              ? "Anda tidak dapat menghapus akun sendiri"
+                              : "Hapus Pengguna"
+                          }
+                        >
+                          <Trash2 size={12} />
+                          <span>Hapus</span>
                         </button>
                       </div>
                     </td>
@@ -1962,6 +2141,360 @@ export default function UserManagementTab() {
                   {resetQrLoading ? "Mereset..." : "Ya, Reset QR"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit User */}
+      {showEditModal && targetEditUser && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-user-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !editLoading && setShowEditModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              backgroundColor: "var(--card-bg, #ffffff)",
+              border: "1px solid var(--border, #e2e8f0)",
+              borderRadius: 8,
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15)",
+              padding: "24px 22px",
+              boxSizing: "border-box",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 id="edit-user-title" style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                Edit Pengguna
+              </h3>
+              <button
+                type="button"
+                onClick={() => !editLoading && setShowEditModal(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted, #94a3b8)", cursor: "pointer", padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {editError && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 12px",
+                  backgroundColor: "rgba(220, 38, 38, 0.08)",
+                  border: "1px solid rgba(220, 38, 38, 0.3)",
+                  borderRadius: 6,
+                  color: "#dc2626",
+                  fontSize: 12.5,
+                  marginBottom: 14,
+                }}
+              >
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateUser}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text, #334155)", marginBottom: 6 }}>
+                  Nama Lengkap <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editNama}
+                  onChange={(e) => setEditNama(e.target.value)}
+                  placeholder="Contoh: Budi Santoso"
+                  disabled={editLoading}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text, #334155)", marginBottom: 6 }}>
+                  Username <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  placeholder="Contoh: budi.santoso"
+                  disabled={editLoading}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text, #334155)", marginBottom: 6 }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="Contoh: budi@company.com"
+                  disabled={editLoading}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text, #334155)", marginBottom: 6 }}>
+                  Role / Peran Pengguna <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value as any)}
+                  disabled={editLoading || targetEditUser.id === currentUser?.id}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 10px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    backgroundColor: targetEditUser.id === currentUser?.id ? "var(--bg-main, #f8fafc)" : "var(--card-bg, #ffffff)",
+                    cursor: targetEditUser.id === currentUser?.id ? "not-allowed" : "pointer",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="staff">Staff GA (Operasional)</option>
+                  <option value="approver">Approver (Penyetuju / Kepala Divisi)</option>
+                  <option value="admin">Administrator (Akses Penuh)</option>
+                </select>
+                {targetEditUser.id === currentUser?.id && (
+                  <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "var(--text-muted, #64748b)" }}>
+                    Role Administrator akun Anda sendiri tidak dapat diubah di sini demi keamanan sistem.
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => !editLoading && setShowEditModal(false)}
+                  disabled={editLoading}
+                  style={{
+                    padding: "8px 14px",
+                    backgroundColor: "var(--bg-main, #f1f5f9)",
+                    color: "var(--text, #334155)",
+                    border: "1px solid var(--border, #cbd5e1)",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: editLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#8f1a25",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: editLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {editLoading ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hapus User */}
+      {showDeleteModal && targetDeleteUser && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !deleteLoading && setShowDeleteModal(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              backgroundColor: "var(--card-bg, #ffffff)",
+              border: "1px solid var(--border, #e2e8f0)",
+              borderRadius: 8,
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15)",
+              padding: "24px 22px",
+              boxSizing: "border-box",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h3 id="delete-user-title" style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#dc2626" }}>
+                Hapus Pengguna
+              </h3>
+              <button
+                type="button"
+                onClick={() => !deleteLoading && setShowDeleteModal(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted, #94a3b8)", cursor: "pointer", padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {deleteError && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 12px",
+                  backgroundColor: "rgba(220, 38, 38, 0.08)",
+                  border: "1px solid rgba(220, 38, 38, 0.3)",
+                  borderRadius: 6,
+                  color: "#dc2626",
+                  fontSize: 12.5,
+                  marginBottom: 14,
+                }}
+              >
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <p style={{ margin: "0 0 14px 0", fontSize: 13, color: "var(--text, #334155)", lineHeight: 1.5 }}>
+              Apakah Anda yakin ingin menghapus akun pengguna berikut secara permanen?
+            </p>
+
+            <div
+              style={{
+                backgroundColor: "var(--bg-main, #f8fafc)",
+                border: "1px solid var(--border, #e2e8f0)",
+                borderRadius: 6,
+                padding: "12px 14px",
+                fontSize: 12.5,
+                lineHeight: 1.6,
+                marginBottom: 16,
+              }}
+            >
+              <div><strong>Nama:</strong> {targetDeleteUser.nama}</div>
+              <div><strong>Username:</strong> {targetDeleteUser.username}</div>
+              <div><strong>Role:</strong> {targetDeleteUser.role.toUpperCase()}</div>
+              {targetDeleteUser.email && <div><strong>Email:</strong> {targetDeleteUser.email}</div>}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "10px 12px",
+                backgroundColor: "rgba(220, 38, 38, 0.08)",
+                border: "1px solid rgba(220, 38, 38, 0.25)",
+                borderRadius: 6,
+                color: "#dc2626",
+                fontSize: 12,
+                lineHeight: 1.4,
+                marginBottom: 20,
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <strong>Peringatan:</strong> Tindakan ini tidak dapat dibatalkan. Riwayat sesi login aktif pengguna ini akan langsung dicabut dari sistem.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => !deleteLoading && setShowDeleteModal(false)}
+                disabled={deleteLoading}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "var(--bg-main, #f1f5f9)",
+                  color: "var(--text, #334155)",
+                  border: "1px solid var(--border, #cbd5e1)",
+                  borderRadius: 6,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={deleteLoading}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {deleteLoading ? "Menghapus..." : "Ya, Hapus Pengguna"}
+              </button>
             </div>
           </div>
         </div>

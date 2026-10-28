@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Download,
   X,
+  Pencil,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -24,11 +25,12 @@ import {
   getPublicUrl,
   getUserSignatureApi,
   replaceMySignatureQrApi,
+  updateMyProfileApi,
   UserSignatureInfo,
 } from "@/lib/api";
 
 export default function AccountSettingsTab() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { showSuccess } = useToast();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -38,6 +40,58 @@ export default function AccountSettingsTab() {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
+
+  // Modal State untuk Edit Profil Mandiri
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileNama, setProfileNama] = useState("");
+  const [profileUsername, setProfileUsername] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileSubmitting, setProfileSubmitting] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const handleOpenEditProfile = () => {
+    if (!user) return;
+    setProfileNama(user.nama || "");
+    setProfileUsername(user.username || "");
+    setProfileEmail(user.email || "");
+    setProfileError(null);
+    setIsEditProfileOpen(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileNama.trim()) {
+      setProfileError("Nama lengkap wajib diisi.");
+      return;
+    }
+    if (!profileUsername.trim()) {
+      setProfileError("Username wajib diisi.");
+      return;
+    }
+    if (profileUsername.trim().length < 3) {
+      setProfileError("Username minimal 3 karakter.");
+      return;
+    }
+
+    setProfileSubmitting(true);
+    setProfileError(null);
+
+    try {
+      await updateMyProfileApi({
+        nama: profileNama.trim(),
+        username: profileUsername.trim(),
+        email: profileEmail.trim() || undefined,
+      });
+
+      showSuccess("Informasi profil akun Anda berhasil diperbarui.", "Profil Diperbarui");
+      setIsEditProfileOpen(false);
+      await refreshUser();
+    } catch (err: any) {
+      setProfileError(err?.message || "Gagal memperbarui profil.");
+    } finally {
+      setProfileSubmitting(false);
+    }
+  };
 
   const [signatureInfo, setSignatureInfo] = useState<UserSignatureInfo | null>(null);
   const [signatureLoading, setSignatureLoading] = useState(false);
@@ -295,78 +349,120 @@ export default function AccountSettingsTab() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                marginBottom: 4,
+                justifyContent: "space-between",
+                gap: 12,
                 flexWrap: "wrap",
+                marginBottom: 6,
               }}
             >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "var(--text, #0f172a)",
-                }}
-              >
-                {user?.nama || "Pengguna"}
-              </h2>
-              {/* Badge Role */}
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "2px 8px",
-                  borderRadius: 6,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.03em",
-                  backgroundColor:
-                    user?.role === "admin"
-                      ? "rgba(143, 26, 37, 0.08)"
-                      : "rgba(37, 99, 235, 0.08)",
-                  color: user?.role === "admin" ? "#8f1a25" : "#1d4ed8",
-                  border:
-                    user?.role === "admin"
-                      ? "1px solid rgba(143, 26, 37, 0.2)"
-                      : "1px solid rgba(37, 99, 235, 0.2)",
-                  textTransform: "uppercase",
-                }}
-              >
-                <Shield size={12} />
-                <span>
-                  {user?.role === "admin" ? "Administrator" : "Staff Operasional"}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: "var(--text, #0f172a)",
+                  }}
+                >
+                  {user?.nama || "Pengguna"}
+                </h2>
+                {/* Badge Role */}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "2px 8px",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.03em",
+                    backgroundColor:
+                      user?.role === "admin"
+                        ? "rgba(143, 26, 37, 0.08)"
+                        : "rgba(37, 99, 235, 0.08)",
+                    color: user?.role === "admin" ? "#8f1a25" : "#1d4ed8",
+                    border:
+                      user?.role === "admin"
+                        ? "1px solid rgba(143, 26, 37, 0.2)"
+                        : "1px solid rgba(37, 99, 235, 0.2)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  <Shield size={12} />
+                  <span>
+                    {user?.role === "admin"
+                      ? "Administrator"
+                      : user?.role === "approver"
+                      ? "Approver"
+                      : "Staff Operasional"}
+                  </span>
                 </span>
-              </span>
-              {/* Badge Status */}
-              <span
+                {/* Badge Status */}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "2px 8px",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    backgroundColor: "rgba(16, 185, 129, 0.08)",
+                    color: "#047857",
+                    border: "1px solid rgba(16, 185, 129, 0.2)",
+                  }}
+                >
+                  <CheckCircle2 size={12} />
+                  <span>Aktif</span>
+                </span>
+              </div>
+
+              {/* Tombol Edit Profil */}
+              <button
+                type="button"
+                onClick={handleOpenEditProfile}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 5,
-                  padding: "2px 8px",
+                  gap: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  backgroundColor: "rgba(143, 26, 37, 0.08)",
+                  color: "#8f1a25",
+                  border: "1px solid rgba(143, 26, 37, 0.25)",
                   borderRadius: 6,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  backgroundColor: "rgba(16, 185, 129, 0.08)",
-                  color: "#047857",
-                  border: "1px solid rgba(16, 185, 129, 0.2)",
+                  cursor: "pointer",
+                  transition: "all 140ms ease",
                 }}
+                title="Edit Nama Lengkap, Username, dan Email"
               >
-                <CheckCircle2 size={12} />
-                <span>Aktif</span>
-              </span>
+                <Pencil size={13} />
+                <span>Edit Profil</span>
+              </button>
             </div>
 
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13,
-                color: "var(--text-muted, #64748b)",
-              }}
-            >
-              Username: <strong style={{ color: "var(--text, #334155)" }}>{user?.username || "-"}</strong>
-            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  color: "var(--text-muted, #64748b)",
+                }}
+              >
+                Username: <strong style={{ color: "var(--text, #334155)", fontFamily: "monospace" }}>{user?.username || "-"}</strong>
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  color: "var(--text-muted, #64748b)",
+                }}
+              >
+                Email: <strong style={{ color: "var(--text, #334155)" }}>{user?.email || "-"}</strong>
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -843,6 +939,278 @@ export default function AccountSettingsTab() {
                   }}
                 >
                   {replaceSubmitting ? "Memproses..." : "Konfirmasi Ganti QR"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Profil Mandiri */}
+      {isEditProfileOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-edit-profile-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => !profileSubmitting && setIsEditProfileOpen(false)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 460,
+              backgroundColor: "var(--card-bg, #ffffff)",
+              border: "1px solid var(--border, #e2e8f0)",
+              borderRadius: 12,
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+              padding: "24px 24px",
+              boxSizing: "border-box",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    backgroundColor: "rgba(143, 26, 37, 0.1)",
+                    color: "#8f1a25",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Pencil size={16} />
+                </div>
+                <h3
+                  id="modal-edit-profile-title"
+                  style={{
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--text, #0f172a)",
+                  }}
+                >
+                  Edit Profil Saya
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => !profileSubmitting && setIsEditProfileOpen(false)}
+                disabled={profileSubmitting}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-muted, #94a3b8)",
+                  cursor: profileSubmitting ? "not-allowed" : "pointer",
+                  padding: 4,
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {profileError && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 12px",
+                  backgroundColor: "rgba(220, 38, 38, 0.08)",
+                  border: "1px solid rgba(220, 38, 38, 0.3)",
+                  borderRadius: 6,
+                  color: "#dc2626",
+                  fontSize: 12.5,
+                  marginBottom: 14,
+                }}
+              >
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <span>{profileError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProfile}>
+              <div style={{ marginBottom: 14 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text, #334155)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Nama Lengkap <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileNama}
+                  onChange={(e) => setProfileNama(e.target.value)}
+                  placeholder="Nama Lengkap"
+                  disabled={profileSubmitting}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text, #334155)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Username <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileUsername}
+                  onChange={(e) => setProfileUsername(e.target.value)}
+                  placeholder="Username untuk login"
+                  disabled={profileSubmitting}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text, #334155)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  placeholder="Alamat email aktif"
+                  disabled={profileSubmitting}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid var(--border, #cbd5e1)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text, #334155)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Peran Akun (Role)
+                </label>
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    backgroundColor: "var(--bg-main, #f8fafc)",
+                    border: "1px solid var(--border, #cbd5e1)",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    color: "var(--text-muted, #64748b)",
+                  }}
+                >
+                  {user?.role === "admin"
+                    ? "Administrator (Akses Penuh)"
+                    : user?.role === "approver"
+                    ? "Approver (Penyetuju)"
+                    : "Staff Operasional GA"}
+                </div>
+                <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "var(--text-muted, #64748b)" }}>
+                  Peran akun hanya dapat diubah oleh Administrator sistem.
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => !profileSubmitting && setIsEditProfileOpen(false)}
+                  disabled={profileSubmitting}
+                  style={{
+                    padding: "8px 14px",
+                    backgroundColor: "var(--bg-main, #f1f5f9)",
+                    color: "var(--text, #334155)",
+                    border: "1px solid var(--border, #cbd5e1)",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: profileSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={profileSubmitting}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#8f1a25",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: profileSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {profileSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
               </div>
             </form>

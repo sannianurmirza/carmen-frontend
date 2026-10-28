@@ -1845,6 +1845,13 @@ export type CreateUserPayload = {
   confirm_password: string;
 };
 
+export type UpdateUserPayload = {
+  nama?: string;
+  username?: string;
+  email?: string | null;
+  role?: "admin" | "staff" | "approver" | "user";
+};
+
 export type ResetPasswordPayload = {
   new_password: string;
   confirm_password: string;
@@ -1911,6 +1918,23 @@ export const resetUserPasswordApi = (userId: number, payload: ResetPasswordPaylo
   request<{ message: string; user_id?: number; username?: string }>(`/settings/users/${userId}/password`, {
     method: "PUT",
     body: JSON.stringify(payload),
+  });
+
+export const updateUserApi = (userId: number, payload: UpdateUserPayload) =>
+  request<AuthUser>(`/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+export const updateMyProfileApi = (payload: { nama?: string; username?: string; email?: string | null }) =>
+  request<AuthUser>("/users/me", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+export const deleteUserApi = (userId: number) =>
+  request<{ message: string; deleted_user_id: number }>(`/users/${userId}`, {
+    method: "DELETE",
   });
 
 export const getUserSignatureApi = (userId: number) =>
