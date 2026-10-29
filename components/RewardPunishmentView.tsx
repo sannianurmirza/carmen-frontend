@@ -23,7 +23,13 @@ import {
   Trash2,
   Eye,
   Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Pencil,
 } from "lucide-react";
+import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import AccessDenied from "@/components/AccessDenied";
@@ -46,6 +52,39 @@ import {
   updateCatering,
   Catering,
 } from "@/lib/api";
+
+interface CustomSelectProps {
+  id?: string;
+  value: string | number;
+  placeholder: string;
+  options: { value: string | number; label: string }[];
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}
+
+function CustomSelect({ id, value, placeholder, options, onChange, disabled }: CustomSelectProps) {
+  return (
+    <div className="select-custom-wrap">
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={value ? "has-value" : "is-placeholder"}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <div className="select-custom-arrow">
+        <ChevronDown size={15} />
+      </div>
+    </div>
+  );
+}
 
 export default function RewardPunishmentView({ initialTab = "detail" }: { initialTab?: "detail" | "riwayat" }) {
   const { user } = useAuth();
@@ -693,84 +732,116 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
 
   return (
     <div className="rp-container">
-      {/* 1. Header Section: Clean, restrained, no breadcrumb chain, only LAPORAN */}
-      <div className="rp-header-row">
-        <div className="rp-title-block">
-          <span className="rp-header-tag">LAPORAN</span>
-          <h1 className="rp-title">Evaluasi Reward & Punishment Katering</h1>
+      {/* 1. Header Section */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-muted, #64748b)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+            }}
+          >
+            LAPORAN
+          </span>
+          <h1
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              margin: 0,
+              color: "var(--text, #0f172a)",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <Award size={24} style={{ color: "var(--red, #b3212f)" }} />
+            <span>Reward &amp; Punishment</span>
+          </h1>
+          <p
+            style={{
+              margin: "2px 0 0",
+              color: "var(--text-muted, #64748b)",
+              fontSize: 13.5,
+            }}
+          >
+            Evaluasi performa bulanan, skema reward, dan sanksi katering secara berkala.
+          </p>
         </div>
 
-        {/* Global Action Group: Primary -> Secondary -> Final */}
-        <div className="rp-action-group">
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="btn btn-primary"
-            >
-              <Plus size={15} />
-              <span>Periode Baru</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("riwayat");
-              if (typeof window !== "undefined") {
-                window.history.replaceState(null, "", "/reward-punishment/riwayat");
-              }
-            }}
-            className="btn btn-secondary"
-            title="Buka riwayat seluruh periode laporan evaluasi"
-          >
-            <History size={15} />
-            <span>Riwayat Periode ({periods.length})</span>
-          </button>
-
-          {selectedPeriodId && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {activeTab === "detail" && (
             <>
-              {canEdit && !isFinal && (
+              {canEdit && (
                 <button
                   type="button"
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="btn btn-secondary"
-                  title="Sinkronkan data operasional"
+                  onClick={() => setShowCreateModal(true)}
+                  className="btn btn-primary"
                 >
-                  <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-                  <span>{syncing ? "Menyinkronkan..." : "Sinkronkan Operasional"}</span>
+                  <Plus size={15} />
+                  <span>Periode Baru</span>
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={handleDownloadExcel}
-                disabled={downloading}
-                className="btn btn-secondary"
-                title="Unduh laporan Excel (.xlsx)"
-              >
-                {downloading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <FileSpreadsheet size={15} />
-                )}
-                <span>{downloading ? "Mengunduh..." : "Unduh Excel"}</span>
-              </button>
+              {selectedPeriodId && (
+                <>
+                  {canEdit && !isFinal && (
+                    <button
+                      type="button"
+                      onClick={handleSync}
+                      disabled={syncing}
+                      className="btn btn-secondary"
+                      title="Sinkronkan data operasional"
+                    >
+                      <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+                      <span>{syncing ? "Menyinkronkan..." : "Sinkronkan Operasional"}</span>
+                    </button>
+                  )}
 
-              {isAdmin && !isFinal && (
-                <button
-                  type="button"
-                  onClick={() => setShowFinalizeModal(true)}
-                  className="btn btn-finalize"
-                  title="Finalisasi periode evaluasi (Kunci data permanen)"
-                >
-                  <CheckCircle2 size={15} />
-                  <span>Finalisasi Evaluasi</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadExcel}
+                    disabled={downloading}
+                    className="btn btn-secondary"
+                    title="Unduh laporan Excel (.xlsx)"
+                  >
+                    {downloading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <FileSpreadsheet size={15} />
+                    )}
+                    <span>{downloading ? "Mengunduh..." : "Unduh Excel"}</span>
+                  </button>
+
+                  {isAdmin && !isFinal && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFinalizeModal(true)}
+                      className="btn btn-finalize"
+                      title="Finalisasi periode evaluasi (Kunci data permanen)"
+                    >
+                      <CheckCircle2 size={15} />
+                      <span>Finalisasi Evaluasi</span>
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
+
+          <HeaderMetaBoxes />
         </div>
       </div>
 
