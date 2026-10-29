@@ -393,15 +393,33 @@ export default function SmtpSettingsTab() {
             Atur email pengirim untuk notifikasi dan proses approval.
           </p>
         </div>
-        <div className="smtp-stamp-badge" id="smtp-metadata-stamp">
-          {formattedStamp ? (
-            <>
-              Terakhir diperbarui <b>{formattedStamp}</b>
-              {updatedByNama ? ` oleh ${updatedByNama}` : ""}
-            </>
-          ) : (
-            <span>Belum pernah dikonfigurasi</span>
-          )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div className="smtp-stamp-badge" id="smtp-metadata-stamp">
+            {formattedStamp ? (
+              <>
+                Terakhir diperbarui <b>{formattedStamp}</b>
+                {updatedByNama ? ` oleh ${updatedByNama}` : ""}
+              </>
+            ) : (
+              <span>Belum pernah dikonfigurasi</span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="smtp-action-btn primary"
+            id="header-save-btn"
+            onClick={() => handleSave()}
+            disabled={isSaving || isTesting}
+            style={{ height: 38, padding: "0 16px", fontSize: 13 }}
+            title="Simpan konfigurasi SMTP ke sistem"
+          >
+            {isSaving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
+            <span>{isSaving ? "Menyimpan..." : "Simpan Konfigurasi"}</span>
+          </button>
         </div>
       </div>
 
@@ -876,7 +894,7 @@ export default function SmtpSettingsTab() {
               color: isDirty ? "var(--amber, #b45309)" : "var(--text-muted, #64748b)",
             }}
           >
-            {isDirty ? "Ada perubahan yang belum disimpan" : "Tidak ada perubahan"}
+            {isDirty ? "Ada perubahan yang belum disimpan" : "Konfigurasi siap"}
           </span>
 
           {/* Save Button */}
@@ -885,14 +903,14 @@ export default function SmtpSettingsTab() {
             className="smtp-action-btn primary"
             id="save"
             onClick={() => handleSave()}
-            disabled={!isDirty || isSaving || isTesting}
+            disabled={isSaving || isTesting}
           >
             {isSaving ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <Save size={16} />
             )}
-            <span id="saveT">{isSaving ? "Menyimpan..." : "Simpan perubahan"}</span>
+            <span id="saveT">{isSaving ? "Menyimpan..." : "Simpan Konfigurasi"}</span>
           </button>
         </div>
       </div>
