@@ -19,7 +19,14 @@ import {
 } from "lucide-react";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ActionCard from "@/components/ActionCard";
-import { getCatering, getApprovals, ApprovalItem, AuthUser } from "@/lib/api";
+import {
+  getCatering,
+  getApprovals,
+  getKelayakanEntries,
+  getAuditEntries,
+  ApprovalItem,
+  AuthUser,
+} from "@/lib/api";
 
 interface AdminDashboardProps {
   user: AuthUser | null;
@@ -29,6 +36,10 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
   const [activeCateringCount, setActiveCateringCount] = useState<number | null>(null);
   const [approvalItems, setApprovalItems] = useState<ApprovalItem[]>([]);
   const [loadingApprovals, setLoadingApprovals] = useState<boolean>(true);
+  const [kelayakanAvg, setKelayakanAvg] = useState<number | null>(null);
+  const [loadingKelayakan, setLoadingKelayakan] = useState<boolean>(true);
+  const [auditAvg, setAuditAvg] = useState<number | null>(null);
+  const [loadingAudit, setLoadingAudit] = useState<boolean>(true);
 
   useEffect(() => {
     getCatering({ activeOnly: true })
@@ -41,7 +52,47 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
         setLoadingApprovals(false);
       })
       .catch(() => setLoadingApprovals(false));
+
+    getKelayakanEntries()
+      .then((res) => {
+        if (
+          res &&
+          res.entries &&
+          res.entries.length > 0 &&
+          res.rata_rata_nilai !== null &&
+          res.rata_rata_nilai !== undefined
+        ) {
+          setKelayakanAvg(res.rata_rata_nilai);
+        } else {
+          setKelayakanAvg(null);
+        }
+        setLoadingKelayakan(false);
+      })
+      .catch(() => {
+        setKelayakanAvg(null);
+        setLoadingKelayakan(false);
+      });
+
+    getAuditEntries()
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          const total = res.reduce(
+            (acc, curr) => acc + Number(curr.nilai_audit ?? curr.nilai_final ?? 0),
+            0
+          );
+          const avg = total / res.length;
+          setAuditAvg(Math.round(avg * 10) / 10);
+        } else {
+          setAuditAvg(null);
+        }
+        setLoadingAudit(false);
+      })
+      .catch(() => {
+        setAuditAvg(null);
+        setLoadingAudit(false);
+      });
   }, []);
+
 
   const pendingApprovalsCount = approvalItems.filter((a) => a.status === "PENDING").length;
 
@@ -99,57 +150,82 @@ export default function AdminDashboard({ user }: AdminDashboardProps) {
           </div>
         </Link>
 
-        <div
-          className="panel"
-          style={{
-            padding: "18px 20px",
-            marginBottom: 0,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
+        {/* Card 2: Kelayakan Menu */}
+        <Link
+          href="/kelayakan"
+          style={{ textDecoration: "none", color: "inherit", display: "block" }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.5px" }}>
-              KELAYAKAN MENU
-            </span>
-            <ClipboardCheck size={18} style={{ color: "var(--green)" }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--green)", lineHeight: 1.1 }}>
-              98.5%
+          <div
+            className="panel"
+            style={{
+              padding: "18px 20px",
+              marginBottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              height: "100%",
+              cursor: "pointer",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.5px" }}>
+                KELAYAKAN MENU
+              </span>
+              <ClipboardCheck size={18} style={{ color: "var(--green)" }} />
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
-              Rata-rata Skor Kelayakan
+            <div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 900,
+                  color: kelayakanAvg !== null ? "var(--green)" : "var(--text)",
+                  lineHeight: 1.1,
+                }}
+              >
+                {loadingKelayakan ? "—" : kelayakanAvg !== null ? `${kelayakanAvg}%` : "—"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
+                {kelayakanAvg !== null ? "Rata-rata Skor Kelayakan" : "Belum Ada Data Penilaian"}
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div
-          className="panel"
-          style={{
-            padding: "18px 20px",
-            marginBottom: 0,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
+        {/* Card 3: Audit Dapur */}
+        <Link
+          href="/audit"
+          style={{ textDecoration: "none", color: "inherit", display: "block" }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.5px" }}>
-              AUDIT DAPUR
-            </span>
-            <ShieldCheck size={18} style={{ color: "var(--red)" }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "var(--text)", lineHeight: 1.1 }}>
-              92.4%
+          <div
+            className="panel"
+            style={{
+              padding: "18px 20px",
+              marginBottom: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              height: "100%",
+              cursor: "pointer",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.5px" }}>
+                AUDIT DAPUR
+              </span>
+              <ShieldCheck size={18} style={{ color: "var(--red)" }} />
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
-              Kepatuhan Higienitas &amp; Servis
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "var(--text)", lineHeight: 1.1 }}>
+                {loadingAudit ? "—" : auditAvg !== null ? `${auditAvg}%` : "—"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
+                {auditAvg !== null ? "Kepatuhan Higienitas & Servis" : "Belum Ada Data Audit"}
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Approval Overview Metric for Admin */}
         <Link
