@@ -1955,6 +1955,26 @@ export const resetUserSignatureApi = (userId: number, note?: string) =>
     body: JSON.stringify({ note: note || undefined }),
   });
 
+export const uploadMySignatureQrApi = (file: File, note?: string) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (note) formData.append("note", note);
+  return request<{ success: boolean; message: string; signature: UserSignatureInfo }>(`/users/me/signature/upload`, {
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const uploadUserSignatureQrApi = (userId: number, file: File, note?: string) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (note) formData.append("note", note);
+  return request<{ success: boolean; message: string; signature: UserSignatureInfo }>(`/users/${userId}/signature/upload`, {
+    method: "POST",
+    body: formData,
+  });
+};
+
 // =====================================================================
 // ---------- Keterlambatan Pengiriman Katering -------------------------
 // =====================================================================

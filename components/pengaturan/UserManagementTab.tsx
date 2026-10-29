@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   QrCode,
   RefreshCw,
+  Upload,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import {
   updateUserStatusApi,
   resetUserPasswordApi,
   resetUserSignatureApi,
+  uploadUserSignatureQrApi,
   updateUserApi,
   deleteUserApi,
 } from "@/lib/api";
@@ -85,6 +87,93 @@ export default function UserManagementTab() {
   const [resetQrNote, setResetQrNote] = useState("");
   const [resetQrLoading, setResetQrLoading] = useState(false);
   const [resetQrError, setResetQrError] = useState<string | null>(null);
+
+  // Modal Upload QR TTD (Admin)
+  const [showUploadQrModal, setShowUploadQrModal] = useState(false);
+  const [targetUploadQrUser, setTargetUploadQrUser] = useState<AuthUser | null>(null);
+  const [uploadQrFile, setUploadQrFile] = useState<File | null>(null);
+  const [uploadQrPreview, setUploadQrPreview] = useState<string | null>(null);
+  const [uploadQrNote, setUploadQrNote] = useState("");
+  const [uploadQrLoading, setUploadQrLoading] = useState(false);
+  const [uploadQrError, setUploadQrError] = useState<string | null>(null);
+  const adminUploadQrInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleOpenUploadQr = (u: AuthUser) => {
+    setTargetUploadQrUser(u);
+    setUploadQrFile(null);
+    if (uploadQrPreview) {
+      URL.revokeObjectURL(uploadQrPreview);
+    }
+    setUploadQrPreview(null);
+    setUploadQrNote("");
+    setUploadQrError(null);
+    setShowUploadQrModal(true);
+  };
+
+  const handleCloseUploadQr = () => {
+    if (uploadQrLoading) return;
+    if (uploadQrPreview) {
+      URL.revokeObjectURL(uploadQrPreview);
+    }
+    setShowUploadQrModal(false);
+    setTargetUploadQrUser(null);
+    setUploadQrFile(null);
+    setUploadQrPreview(null);
+    setUploadQrNote("");
+    setUploadQrError(null);
+  };
+
+  const handleUploadQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setUploadQrError("Format file tidak didukung. Harap pilih gambar PNG, JPG, JPEG, atau WEBP.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadQrError("Ukuran file gambar maksimal 5 MB.");
+      return;
+    }
+
+    setUploadQrError(null);
+    setUploadQrFile(file);
+    if (uploadQrPreview) {
+      URL.revokeObjectURL(uploadQrPreview);
+    }
+    setUploadQrPreview(URL.createObjectURL(file));
+  };
+
+  const handleConfirmUploadQr = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetUploadQrUser || !uploadQrFile || uploadQrLoading) return;
+
+    setUploadQrLoading(true);
+    setUploadQrError(null);
+    try {
+      const res = await uploadUserSignatureQrApi(targetUploadQrUser.id, uploadQrFile, uploadQrNote);
+      showToast({
+        type: "success",
+        title: "QR Tanda Tangan Diperbarui",
+        message: `QR/TTD untuk pengguna '${targetUploadQrUser.nama}' berhasil diunggah dan diaktifkan.`,
+      });
+      // Update local state for user signature status
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === targetUploadQrUser.id
+            ? { ...u, signature: res.signature }
+            : u
+        )
+      );
+      handleCloseUploadQr();
+    } catch (err: any) {
+      setUploadQrError(err?.message || "Gagal mengunggah QR Tanda Tangan.");
+    } finally {
+      setUploadQrLoading(false);
+    }
+  };
 
   // Modal Edit User (Admin only)
   const [showEditModal, setShowEditModal] = useState(false);
@@ -896,6 +985,28 @@ export default function UserManagementTab() {
                           >
                             <RefreshCw size={11} />
                             <span>Reset QR</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenUploadQr(u)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                              padding: "4px 8px",
+                              fontSize: 10.5,
+                              fontWeight: 600,
+                              backgroundColor: "rgba(2, 132, 199, 0.08)",
+                              color: "#0284c7",
+                              border: "1px solid rgba(2, 132, 199, 0.25)",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                            }}
+                            title="Upload QR Tanda Tangan"
+                          >
+                            <Upload size={11} />
+                            <span>Upload QR</span>
                           </button>
                         </div>
                       </div>
@@ -1925,7 +2036,32 @@ export default function UserManagementTab() {
                 QR ini merupakan identitas tanda tangan digital permanen milik pengguna. QR yang sama disematkan pada seluruh dokumen yang disetujui pengguna ini.
               </p>
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const u = targetQrUser;
+                    setShowQrModal(false);
+                    handleOpenUploadQr(u);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 14px",
+                    backgroundColor: "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Upload size={13} />
+                  <span>Upload QR Baru</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setShowQrModal(false)}
@@ -2142,6 +2278,349 @@ export default function UserManagementTab() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Upload QR TTD (Admin) */}
+      {showUploadQrModal && targetUploadQrUser && (
+        <div
+          id="modal-admin-upload-qr"
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 500,
+              backgroundColor: "#ffffff",
+              borderRadius: 12,
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              border: "1px solid #e2e8f0",
+              overflow: "hidden",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: "#f8fafc",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    backgroundColor: "rgba(2, 132, 199, 0.1)",
+                    color: "#0284c7",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Upload size={17} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                    Upload QR Tanda Tangan
+                  </h3>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                    Pengguna: <strong>{targetUploadQrUser.nama}</strong> ({targetUploadQrUser.username})
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseUploadQr}
+                disabled={uploadQrLoading}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#64748b",
+                  cursor: "pointer",
+                  padding: 4,
+                  display: "flex",
+                  borderRadius: 6,
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <form onSubmit={handleConfirmUploadQr} style={{ padding: "20px" }}>
+              <div
+                style={{
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  fontSize: 12.5,
+                  color: "#166534",
+                  lineHeight: 1.5,
+                  marginBottom: 16,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                }}
+              >
+                <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: 2, color: "#16a34a" }} />
+                <div>
+                  QR / TTD yang diunggah akan menggantikan tanda tangan aktif pengguna ini untuk pengesahan dokumen mendatang.
+                </div>
+              </div>
+
+              {/* Upload Drop Zone / Input */}
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "#334155",
+                    marginBottom: 6,
+                  }}
+                >
+                  Pilih File Gambar QR/TTD <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+
+                <input
+                  ref={adminUploadQrInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleUploadQrFileChange}
+                  style={{ display: "none" }}
+                  id="admin-upload-qr-input"
+                />
+
+                {!uploadQrPreview ? (
+                  <div
+                    onClick={() => adminUploadQrInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #cbd5e1",
+                      borderRadius: 10,
+                      padding: "24px 16px",
+                      textAlign: "center",
+                      backgroundColor: "#f8fafc",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = "#0284c7";
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "#f0f9ff";
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = "#cbd5e1";
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "#f8fafc";
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(2, 132, 199, 0.1)",
+                        color: "#0284c7",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 8px",
+                      }}
+                    >
+                      <Upload size={20} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", marginBottom: 3 }}>
+                      Pilih file QR atau TTD
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                      Format: PNG, JPG, JPEG, WEBP (Maksimal 5 MB)
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 10,
+                      padding: 12,
+                      backgroundColor: "#f8fafc",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 8,
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={uploadQrPreview}
+                        alt="Preview TTD"
+                        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#1e293b",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {uploadQrFile?.name}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                        {uploadQrFile ? `${(uploadQrFile.size / 1024).toFixed(1)} KB` : ""}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => adminUploadQrInputRef.current?.click()}
+                        style={{
+                          marginTop: 6,
+                          padding: "3px 8px",
+                          borderRadius: 5,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          backgroundColor: "#ffffff",
+                          color: "#0284c7",
+                          border: "1px solid #0284c7",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ganti File
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Catatan (Opsional) */}
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "#334155",
+                    marginBottom: 6,
+                  }}
+                >
+                  Catatan / Keterangan (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={uploadQrNote}
+                  onChange={(e) => setUploadQrNote(e.target.value)}
+                  placeholder="Contoh: Upload QR resmi dari manajemen"
+                  disabled={uploadQrLoading}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    fontSize: 13,
+                    padding: "0 12px",
+                    borderRadius: 6,
+                    border: "1px solid #cbd5e1",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Error Message */}
+              {uploadQrError && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "9px 12px",
+                    backgroundColor: "rgba(220, 38, 38, 0.08)",
+                    border: "1px solid rgba(220, 38, 38, 0.3)",
+                    borderRadius: 6,
+                    color: "#dc2626",
+                    fontSize: 12.5,
+                    marginBottom: 14,
+                  }}
+                >
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{uploadQrError}</span>
+                </div>
+              )}
+
+              {/* Modal Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={handleCloseUploadQr}
+                  disabled={uploadQrLoading}
+                  style={{
+                    padding: "8px 14px",
+                    backgroundColor: "#f1f5f9",
+                    color: "#334155",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: uploadQrLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadQrLoading || !uploadQrFile}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 16px",
+                    backgroundColor: uploadQrLoading || !uploadQrFile ? "#cbd5e1" : "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: uploadQrLoading || !uploadQrFile ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <Upload size={13} />
+                  <span>{uploadQrLoading ? "Mengunggah..." : "Upload & Simpan"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

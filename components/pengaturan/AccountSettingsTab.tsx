@@ -15,6 +15,8 @@ import {
   Info,
   RefreshCw,
   Download,
+  Upload,
+  FileImage,
   X,
   Pencil,
 } from "lucide-react";
@@ -25,6 +27,7 @@ import {
   getPublicUrl,
   getUserSignatureApi,
   replaceMySignatureQrApi,
+  uploadMySignatureQrApi,
   updateMyProfileApi,
   UserSignatureInfo,
 } from "@/lib/api";
@@ -105,8 +108,17 @@ export default function AccountSettingsTab() {
   const [replaceSubmitting, setReplaceSubmitting] = useState(false);
   const [replaceError, setReplaceError] = useState<string | null>(null);
 
+  // Modal State untuk Upload QR TTD Mandiri (Self-Service)
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadNote, setUploadNote] = useState("");
+  const [uploadSubmitting, setUploadSubmitting] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   React.useEffect(() => {
-    if (user && (user.role === "approver" || user.role === "admin")) {
+    if (user && (user.role === "approver" || user.role === "admin" || user.role === "staff")) {
       setSignatureLoading(true);
       getUserSignatureApi(user.id)
         .then((sig) => setSignatureInfo(sig))
@@ -114,6 +126,77 @@ export default function AccountSettingsTab() {
         .finally(() => setSignatureLoading(false));
     }
   }, [user]);
+
+  const handleOpenUploadModal = () => {
+    setUploadFile(null);
+    if (uploadPreview) {
+      URL.revokeObjectURL(uploadPreview);
+    }
+    setUploadPreview(null);
+    setUploadNote("");
+    setUploadError(null);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    if (uploadSubmitting) return;
+    if (uploadPreview) {
+      URL.revokeObjectURL(uploadPreview);
+    }
+    setIsUploadModalOpen(false);
+    setUploadFile(null);
+    setUploadPreview(null);
+    setUploadNote("");
+    setUploadError(null);
+  };
+
+  const handleUploadFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setUploadError("Format file tidak didukung. Harap pilih gambar PNG, JPG, JPEG, atau WEBP.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Ukuran file gambar maksimal 5 MB.");
+      return;
+    }
+
+    setUploadError(null);
+    setUploadFile(file);
+    if (uploadPreview) {
+      URL.revokeObjectURL(uploadPreview);
+    }
+    setUploadPreview(URL.createObjectURL(file));
+  };
+
+  const handleConfirmUploadSignature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) {
+      setUploadError("Silakan pilih file gambar QR/TTD terlebih dahulu.");
+      return;
+    }
+
+    setUploadSubmitting(true);
+    setUploadError(null);
+    try {
+      const res = await uploadMySignatureQrApi(uploadFile, uploadNote);
+      showSuccess(
+        "QR / Tanda Tangan Anda berhasil diunggah dan diaktifkan.",
+        "QR TTD Diperbarui"
+      );
+      setSignatureInfo(res.signature);
+      setQrTimestamp(Date.now());
+      handleCloseUploadModal();
+    } catch (err: any) {
+      setUploadError(err?.message || "Gagal mengunggah QR Tanda Tangan.");
+    } finally {
+      setUploadSubmitting(false);
+    }
+  };
 
   const handleOpenReplaceModal = () => {
     setReplacePassword("");
@@ -467,8 +550,8 @@ export default function AccountSettingsTab() {
         </div>
       </section>
 
-      {/* Card 1.5: Tanda Tangan Elektronik (Approver & Admin) */}
-      {(user?.role === "approver" || user?.role === "admin" || signatureInfo?.has_signature) && (
+      {/* Card 1.5: Tanda Tangan Elektronik */}
+      {(user?.role === "approver" || user?.role === "admin" || user?.role === "staff" || signatureInfo?.has_signature) && (
         <section
           style={{
             backgroundColor: "var(--card-bg, #ffffff)",
@@ -585,7 +668,7 @@ export default function AccountSettingsTab() {
                   lineHeight: 1.5,
                 }}
               >
-                QR ini terpasang secara otomatis pada lembar dokumen Excel saat Anda menyetujui laporan. Anda dapat mengganti QR tanda tangan Anda sendiri secara mandiri tanpa memerlukan bantuan Admin.
+                QR ini terpasang secara otomatis pada lembar dokumen Excel saat Anda menyetujui laporan. Anda dapat mengunggah gambar QR/TTD Anda sendiri atau membuat ulang secara mandiri.
               </p>
 
               <div
@@ -605,12 +688,38 @@ export default function AccountSettingsTab() {
               >
                 <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                 <span>
-                  Keamanan Terjamin: Penggantian QR menghasilkan token baru dan tidak mengubah dokumen yang telah disetujui sebelumnya.
+                  Keamanan Terjamin: Pengunggahan atau penggantian QR menghasilkan token baru dan tidak mengubah dokumen yang telah disetujui sebelumnya.
                 </span>
               </div>
 
               {/* Action Buttons */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  id="btn-open-upload-qr"
+                  type="button"
+                  onClick={handleOpenUploadModal}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 16px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    backgroundColor: "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 3px rgba(2, 132, 199, 0.3)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseOver={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#0369a1")}
+                  onMouseOut={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#0284c7")}
+                >
+                  <Upload size={14} />
+                  <span>Upload QR TTD</span>
+                </button>
+
                 <button
                   id="btn-open-replace-qr"
                   type="button"
@@ -939,6 +1048,366 @@ export default function AccountSettingsTab() {
                   }}
                 >
                   {replaceSubmitting ? "Memproses..." : "Konfirmasi Ganti QR"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Upload QR TTD */}
+      {isUploadModalOpen && (
+        <div
+          id="modal-upload-qr"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-upload-qr-title"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 500,
+              backgroundColor: "#ffffff",
+              borderRadius: 14,
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+              border: "1px solid #e2e8f0",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "18px 22px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: "#f8fafc",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    backgroundColor: "rgba(2, 132, 199, 0.1)",
+                    color: "#0284c7",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Upload size={18} />
+                </div>
+                <div>
+                  <h3
+                    id="modal-upload-qr-title"
+                    style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}
+                  >
+                    Upload QR / Tanda Tangan
+                  </h3>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    Unggah file gambar QR atau TTD resmi Anda
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseUploadModal}
+                disabled={uploadSubmitting}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#64748b",
+                  cursor: "pointer",
+                  padding: 4,
+                  display: "flex",
+                  borderRadius: 6,
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleConfirmUploadSignature} style={{ padding: "20px 22px" }}>
+              {/* Notice Box */}
+              <div
+                style={{
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  fontSize: 12.5,
+                  color: "#166534",
+                  lineHeight: 1.5,
+                  marginBottom: 18,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                }}
+              >
+                <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: 2, color: "#16a34a" }} />
+                <div>
+                  Gambar QR / TTD yang diunggah akan otomatis disimpan dan disematkan pada lembar dokumen Excel saat Anda menyetujui laporan.
+                </div>
+              </div>
+
+              {/* Upload Drop Zone / Input */}
+              <div style={{ marginBottom: 18 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#334155",
+                    marginBottom: 8,
+                  }}
+                >
+                  Pilih File Gambar <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleUploadFileChange}
+                  style={{ display: "none" }}
+                  id="input-upload-qr-file"
+                />
+
+                {!uploadPreview ? (
+                  <div
+                    onClick={() => uploadFileInputRef.current?.click()}
+                    style={{
+                      border: "2px dashed #cbd5e1",
+                      borderRadius: 10,
+                      padding: "28px 16px",
+                      textAlign: "center",
+                      backgroundColor: "#f8fafc",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = "#0284c7";
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "#f0f9ff";
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = "#cbd5e1";
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "#f8fafc";
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(2, 132, 199, 0.1)",
+                        color: "#0284c7",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 10px",
+                      }}
+                    >
+                      <Upload size={22} />
+                    </div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>
+                      Klik untuk memilih file gambar
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      Format didukung: PNG, JPG, JPEG, WEBP (Maksimal 5 MB)
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 10,
+                      padding: 14,
+                      backgroundColor: "#f8fafc",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 90,
+                        height: 90,
+                        borderRadius: 8,
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={uploadPreview}
+                        alt="Preview TTD"
+                        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          fontWeight: 600,
+                          color: "#1e293b",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {uploadFile?.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                        {uploadFile ? `${(uploadFile.size / 1024).toFixed(1)} KB` : ""}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => uploadFileInputRef.current?.click()}
+                        style={{
+                          marginTop: 8,
+                          padding: "4px 10px",
+                          borderRadius: 6,
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          backgroundColor: "#ffffff",
+                          color: "#0284c7",
+                          border: "1px solid #0284c7",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ganti Gambar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Catatan / Keterangan (Opsional) */}
+              <div style={{ marginBottom: 20 }}>
+                <label
+                  htmlFor="input-upload-note"
+                  style={{
+                    display: "block",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#334155",
+                    marginBottom: 6,
+                  }}
+                >
+                  Keterangan (Opsional)
+                </label>
+                <input
+                  id="input-upload-note"
+                  type="text"
+                  value={uploadNote}
+                  onChange={(e) => setUploadNote(e.target.value)}
+                  placeholder="Contoh: Tanda tangan resmi approval catering 2026"
+                  disabled={uploadSubmitting}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Error Message */}
+              {uploadError && (
+                <div
+                  style={{
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#b91c1c",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    marginBottom: 18,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {/* Modal Actions */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  paddingTop: 14,
+                  borderTop: "1px solid #f1f5f9",
+                }}
+              >
+                <button
+                  id="btn-cancel-upload-modal"
+                  type="button"
+                  onClick={handleCloseUploadModal}
+                  disabled={uploadSubmitting}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    backgroundColor: "#ffffff",
+                    color: "#475569",
+                    border: "1px solid #cbd5e1",
+                    cursor: "pointer",
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  id="btn-submit-upload-qr"
+                  type="submit"
+                  disabled={uploadSubmitting || !uploadFile}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "9px 20px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    backgroundColor: uploadSubmitting || !uploadFile ? "#cbd5e1" : "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    cursor: uploadSubmitting || !uploadFile ? "not-allowed" : "pointer",
+                    boxShadow: "0 1px 3px rgba(2, 132, 199, 0.3)",
+                  }}
+                >
+                  <Upload size={14} />
+                  <span>{uploadSubmitting ? "Mengunggah..." : "Simpan & Aktifkan"}</span>
                 </button>
               </div>
             </form>
