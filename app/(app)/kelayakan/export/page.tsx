@@ -178,7 +178,7 @@ function CenteredSelect({ value, placeholder, options, onChange, style }: Center
 
 function StarRating({
   value,
-  max = 3,
+  max = 5,
   readOnly = true,
 }: {
   value: number;
@@ -186,22 +186,24 @@ function StarRating({
   readOnly?: boolean;
 }) {
   const getLabel = (star: number) => {
-    if (star === 1) return "1 (Kurang)";
-    if (star === 2) return "2 (Cukup)";
-    if (star === 3) return "3 (Baik)";
+    if (star === 1) return "1 (Sangat Kurang)";
+    if (star === 2) return "2 (Kurang)";
+    if (star === 3) return "3 (Cukup)";
+    if (star === 4) return "4 (Baik)";
+    if (star === 5) return "5 (Sangat Baik)";
     return "";
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
         {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
           const isFilled = star <= value;
           return (
             <div
               key={star}
               style={{
-                padding: "4px 6px",
+                padding: "2px 2px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -209,7 +211,7 @@ function StarRating({
               title={getLabel(star)}
             >
               <Star
-                size={22}
+                size={18}
                 fill={isFilled ? "#f59e0b" : "transparent"}
                 color={isFilled ? "#f59e0b" : "var(--text-muted)"}
                 strokeWidth={1.75}
@@ -220,7 +222,7 @@ function StarRating({
       </div>
       <span
         style={{
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: 600,
           color: value > 0 ? "var(--text)" : "var(--text-muted)",
         }}
@@ -1114,7 +1116,7 @@ export default function ExportKelayakanPage() {
                 {viewModalEntries.map((entry, idx) => {
                   const totalVal = entry.total_nilai ?? 0;
                   const scoreVal =
-                    entry.score_presentase ?? Math.round((totalVal / 39) * 100 * 100) / 100;
+                    entry.score_presentase ?? Math.round((totalVal / 65) * 100 * 100) / 100;
 
                   return (
                     <div
@@ -1145,7 +1147,7 @@ export default function ExportKelayakanPage() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)" }}>
-                            Total Nilai: <strong style={{ color: "var(--text)" }}>{totalVal}/39</strong>
+                            Total Nilai: <strong style={{ color: "var(--text)" }}>{totalVal}/65</strong>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--red)" }}>
                             Score Presentase: <strong>{formatPercentID(scoreVal, 2)}</strong>
@@ -1273,7 +1275,7 @@ export default function ExportKelayakanPage() {
                   const avgScore =
                     viewModalEntries.reduce((acc, e) => {
                       const tVal = e.total_nilai ?? 0;
-                      return acc + (e.score_presentase ?? (tVal / 39) * 100);
+                      return acc + (e.score_presentase ?? (tVal / 65) * 100);
                     }, 0) / viewModalEntries.length;
                   return (
                     <span className="pill pill-combo" style={{ fontWeight: 700, fontSize: 12 }}>

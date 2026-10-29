@@ -273,7 +273,7 @@ export async function generateKelayakanExcelBuffer(
           ws.getCell(`Q${r}`).value = krantang;
 
           const totalNilai = nk + nr + lk + lr + sk + sr + mk + mr + kk + kr + bk + br + krantang;
-          const scorePercent = totalNilai / 39;
+          const scorePercent = totalNilai / 65;
           catScores.push(scorePercent);
 
           if (!cateringScoresMap.has(group.catering_nama)) {
@@ -282,7 +282,7 @@ export async function generateKelayakanExcelBuffer(
           cateringScoresMap.get(group.catering_nama)!.push(scorePercent);
 
           ws.getCell(`R${r}`).value = { formula: `SUM(E${r}:Q${r})`, result: totalNilai };
-          ws.getCell(`S${r}`).value = { formula: `R${r}/39`, result: scorePercent };
+          ws.getCell(`S${r}`).value = { formula: `R${r}/65`, result: scorePercent };
           ws.getCell(`S${r}`).numFmt = "0.00%";
 
           ws.getCell(`A${r}`).alignment = { horizontal: "center", vertical: "middle" };
