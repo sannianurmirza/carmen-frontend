@@ -269,14 +269,6 @@ export function isRouteAllowed(
     return hasCapability(user, CAN_MANAGE_SMTP);
   }
 
-  // ======================================================================
-  // TEMPORARY SMTP TESTING PAGE (Admin and Staff only)
-  // SAFE TO REMOVE AFTER SMTP PRODUCTION VALIDATION
-  // ======================================================================
-  if (cleanPath === "/pengaturan/smtp-testing" || cleanPath.startsWith("/pengaturan/smtp-testing/")) {
-    return hasCapability(user, CAN_MANAGE_SMTP);
-  }
-
   // General settings (Akun Saya)
   if (cleanPath === "/pengaturan" || cleanPath === "/pengaturan/akun" || cleanPath.startsWith("/pengaturan/akun/")) {
     return true;

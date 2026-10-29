@@ -6,7 +6,7 @@
 export interface SettingsNavItem {
   href: string;
   label: string;
-  iconName: "UserRound" | "Utensils" | "Scale" | "Users" | "Mail" | "FlaskConical";
+  iconName: "UserRound" | "Utensils" | "Scale" | "Users" | "Mail";
   adminOnly?: boolean;
   badge?: string;
 }
@@ -31,16 +31,6 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     href: "/pengaturan/smtp",
     label: "SMTP",
     iconName: "Mail",
-  },
-  // ======================================================================
-  // TEMPORARY SMTP TESTING PAGE
-  // SAFE TO REMOVE AFTER SMTP PRODUCTION VALIDATION
-  // ======================================================================
-  {
-    href: "/pengaturan/smtp-testing",
-    label: "SMTP Testing",
-    iconName: "FlaskConical",
-    badge: "Testing",
   },
   {
     href: "/pengaturan/pengguna",
@@ -76,9 +66,6 @@ export function resolveSettingsRedirectTarget(tabParam: string | null): string {
   }
   if (tabParam === "standar-berat" || tabParam === "berat") {
     return "/pengaturan/standar-berat";
-  }
-  if (tabParam === "smtp-testing" || tabParam === "testing") {
-    return "/pengaturan/smtp-testing";
   }
   if (tabParam === "smtp" || tabParam === "mail" || tabParam === "email") {
     return "/pengaturan/smtp";

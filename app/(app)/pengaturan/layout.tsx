@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserRound, Utensils, Scale, Users, Mail, FlaskConical } from "lucide-react";
+import { UserRound, Utensils, Scale, Users, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
   getVisibleSettingsNavItems,
@@ -17,7 +17,6 @@ const ICON_MAP: Record<SettingsNavItem["iconName"], React.ElementType> = {
   Scale,
   Users,
   Mail,
-  FlaskConical,
 };
 
 export default function PengaturanLayout({

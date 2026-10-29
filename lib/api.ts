@@ -3501,49 +3501,6 @@ export const testSmtpApi = (
 };
 
 // ======================================================================
-// TEMPORARY SMTP TESTING PAGE
-// SAFE TO REMOVE AFTER SMTP PRODUCTION VALIDATION
-// ======================================================================
-
-export interface SmtpTestingPayload {
-  smtp_host: string;
-  smtp_port: number;
-  security_mode?: "none" | "tls" | "ssl";
-  use_tls?: boolean;
-  use_ssl?: boolean;
-  username?: string | null;
-  password?: string | null;
-  email_sender?: string | null;
-  sender_name?: string | null;
-  test_recipient_email?: string | null;
-  subject?: string | null;
-}
-
-export interface SmtpTestingResult {
-  success: boolean;
-  message: string;
-  recipient?: string;
-}
-
-export const testSmtpTestingConnectionApi = (
-  data: SmtpTestingPayload
-): Promise<SmtpTestingResult> => {
-  return request<SmtpTestingResult>("/settings/smtp-testing/connection", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-};
-
-export const sendSmtpTestingEmailApi = (
-  data: SmtpTestingPayload
-): Promise<SmtpTestingResult> => {
-  return request<SmtpTestingResult>("/settings/smtp-testing/send", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-};
-
-// ======================================================================
 // REWARD & PUNISHMENT CATERING EVALUATION MODULE
 // ======================================================================
 
