@@ -3665,13 +3665,30 @@ export const getRewardPunishmentPeriodDetailApi = (
   return request<RewardPunishmentPeriodDetail>(`/reward-punishment/periods/${periodId}?group=${group}`);
 };
 
+export interface RewardPunishmentPeriodUpdatePayload {
+  nama_periode?: string;
+  tanggal_mulai?: string;
+  tanggal_selesai?: string;
+  target_bulan_berikutnya?: string;
+  catatan?: string;
+  keterangan?: string;
+}
+
 export const updateRewardPunishmentPeriodApi = (
   periodId: number,
-  payload: { target_bulan_berikutnya?: string; catatan?: string; keterangan?: string }
+  payload: RewardPunishmentPeriodUpdatePayload
 ): Promise<{ success: boolean; message: string }> => {
   return request(`/reward-punishment/periods/${periodId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
+  });
+};
+
+export const deleteRewardPunishmentPeriodApi = (
+  periodId: number
+): Promise<{ success: boolean; message: string; deleted_id: number }> => {
+  return request(`/reward-punishment/periods/${periodId}`, {
+    method: "DELETE",
   });
 };
 

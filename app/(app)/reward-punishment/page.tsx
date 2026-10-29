@@ -19,6 +19,10 @@ import {
   X,
   Edit2,
   SlidersHorizontal,
+  History,
+  Trash2,
+  Eye,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -36,6 +40,8 @@ import {
   updateRewardPunishmentShiftApi,
   finalizeRewardPunishmentPeriodApi,
   triggerRewardPunishmentExcelDownload,
+  updateRewardPunishmentPeriodApi,
+  deleteRewardPunishmentPeriodApi,
   getCatering,
   updateCatering,
   Catering,
@@ -57,6 +63,36 @@ export default function RewardPunishmentPage() {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<boolean>(false);
   const [finalizing, setFinalizing] = useState<boolean>(false);
+
+  // History Modal State
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [historySearch, setHistorySearch] = useState<string>("");
+
+  // Edit Period Modal State
+  const [showEditPeriodModal, setShowEditPeriodModal] = useState<boolean>(false);
+  const [editingPeriod, setEditingPeriod] = useState<RewardPunishmentPeriodListItem | null>(null);
+  const [savingEditPeriod, setSavingEditPeriod] = useState<boolean>(false);
+  const [editDateError, setEditDateError] = useState<string>("");
+  const [editPeriodForm, setEditPeriodForm] = useState<{
+    nama_periode: string;
+    tanggal_mulai: string;
+    tanggal_selesai: string;
+    target_bulan_berikutnya: string;
+    catatan: string;
+    keterangan: string;
+  }>({
+    nama_periode: "",
+    tanggal_mulai: "",
+    tanggal_selesai: "",
+    target_bulan_berikutnya: "",
+    catatan: "",
+    keterangan: "",
+  });
+
+  // Delete Period State
+  const [deletingPeriod, setDeletingPeriod] = useState<RewardPunishmentPeriodListItem | null>(null);
+  const [isDeletingPeriod, setIsDeletingPeriod] = useState<boolean>(false);
+
   const [mobileActiveVendor, setMobileActiveVendor] = useState<Record<string, number>>({
     Pagi: 0,
     Malam: 0,
@@ -383,6 +419,123 @@ export default function RewardPunishmentPage() {
     }
   };
 
+  // Open Edit Period Modal
+  const handleOpenEditPeriod = (p: RewardPunishmentPeriodListItem) => {
+    setEditingPeriod(p);
+    setEditPeriodForm({
+      nama_periode: p.nama_periode || "",
+      tanggal_mulai: p.tanggal_mulai || "",
+      tanggal_selesai: p.tanggal_selesai || "",
+      target_bulan_berikutnya: p.target_bulan_berikutnya || "",
+      catatan: p.catatan || "",
+      keterangan: p.keterangan || "",
+    });
+    setEditDateError("");
+    setShowEditPeriodModal(true);
+  };
+
+  const handleEditStartDateChange = (val: string) => {
+    setEditPeriodForm((prev) => {
+      const next = { ...prev, tanggal_mulai: val };
+      if (next.tanggal_selesai && val > next.tanggal_selesai) {
+        setEditDateError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      } else {
+        setEditDateError("");
+      }
+      return next;
+    });
+  };
+
+  const handleEditEndDateChange = (val: string) => {
+    setEditPeriodForm((prev) => {
+      const next = { ...prev, tanggal_selesai: val };
+      if (prev.tanggal_mulai && val < prev.tanggal_mulai) {
+        setEditDateError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      } else {
+        setEditDateError("");
+        const nextMonth = deriveNextMonthLabel(val);
+        if (nextMonth && (!prev.target_bulan_berikutnya || prev.target_bulan_berikutnya.includes("2026") || prev.target_bulan_berikutnya.includes("2027"))) {
+          next.target_bulan_berikutnya = nextMonth;
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleSaveEditPeriod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPeriod) return;
+    if (editPeriodForm.tanggal_selesai < editPeriodForm.tanggal_mulai) {
+      setEditDateError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      return;
+    }
+    setSavingEditPeriod(true);
+    try {
+      await updateRewardPunishmentPeriodApi(editingPeriod.id, {
+        nama_periode: editPeriodForm.nama_periode.trim(),
+        tanggal_mulai: editPeriodForm.tanggal_mulai,
+        tanggal_selesai: editPeriodForm.tanggal_selesai,
+        target_bulan_berikutnya: editPeriodForm.target_bulan_berikutnya.trim(),
+        catatan: editPeriodForm.catatan ? editPeriodForm.catatan.trim() : undefined,
+        keterangan: editPeriodForm.keterangan ? editPeriodForm.keterangan.trim() : undefined,
+      });
+      showToast("Periode evaluasi berhasil diperbarui.", "success");
+      setShowEditPeriodModal(false);
+      const updatedId = editingPeriod.id;
+      setEditingPeriod(null);
+      await loadPeriods(updatedId);
+      if (selectedPeriodId === updatedId) {
+        await loadDetail(updatedId, selectedGroup);
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal memperbarui periode evaluasi", "error");
+    } finally {
+      setSavingEditPeriod(false);
+    }
+  };
+
+  // Confirm Delete Period
+  const handleConfirmDeletePeriod = async () => {
+    if (!deletingPeriod) return;
+    setIsDeletingPeriod(true);
+    try {
+      await deleteRewardPunishmentPeriodApi(deletingPeriod.id);
+      showToast(`Periode '${deletingPeriod.nama_periode}' berhasil dihapus.`, "success");
+      const deletedId = deletingPeriod.id;
+      setDeletingPeriod(null);
+
+      const updatedList = await getRewardPunishmentPeriodsApi();
+      setPeriods(updatedList);
+      if (selectedPeriodId === deletedId) {
+        if (updatedList.length > 0) {
+          setSelectedPeriodId(updatedList[0].id);
+        } else {
+          setSelectedPeriodId(null);
+          setDetail(null);
+        }
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal menghapus periode evaluasi", "error");
+    } finally {
+      setIsDeletingPeriod(false);
+    }
+  };
+
+  // Filtered Periods for History Modal
+  const filteredHistoryPeriods = useMemo(() => {
+    if (!historySearch.trim()) return periods;
+    const q = historySearch.toLowerCase().trim();
+    return periods.filter(
+      (p) =>
+        p.nama_periode.toLowerCase().includes(q) ||
+        (p.target_bulan_berikutnya && p.target_bulan_berikutnya.toLowerCase().includes(q)) ||
+        p.tanggal_mulai.includes(q) ||
+        p.tanggal_selesai.includes(q) ||
+        p.status.toLowerCase().includes(q) ||
+        (p.catatan && p.catatan.toLowerCase().includes(q))
+    );
+  }, [periods, historySearch]);
+
   // Edit item inline
   const startEditItem = (item: RewardPunishmentItem) => {
     if (isFinal || !canEdit) return;
@@ -500,6 +653,16 @@ export default function RewardPunishmentPage() {
             </button>
           )}
 
+          <button
+            type="button"
+            onClick={() => setShowHistoryModal(true)}
+            className="btn btn-secondary"
+            title="Buka histori seluruh periode laporan evaluasi"
+          >
+            <History size={15} />
+            <span>Histori Periode</span>
+          </button>
+
           {selectedPeriodId && (
             <>
               {canEdit && !isFinal && (
@@ -556,24 +719,36 @@ export default function RewardPunishmentPage() {
           ) : periods.length === 0 ? (
             <span className="rp-empty-text">Belum ada periode evaluasi.</span>
           ) : (
-            <select
-              value={selectedPeriodId || ""}
-              onChange={(e) => setSelectedPeriodId(Number(e.target.value))}
-              className="rp-select"
-            >
-              {periods.map((p) => {
-                const rangeLabel = `${formatDateIndo(p.tanggal_mulai)} s/d ${formatDateIndo(p.tanggal_selesai)}`;
-                const isNamedByRange = p.nama_periode.includes("s/d");
-                const optionText = isNamedByRange
-                  ? `${p.nama_periode} — [${p.status}]`
-                  : `${p.nama_periode} (${rangeLabel}) — [${p.status}]`;
-                return (
-                  <option key={p.id} value={p.id}>
-                    {optionText}
-                  </option>
-                );
-              })}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <select
+                value={selectedPeriodId || ""}
+                onChange={(e) => setSelectedPeriodId(Number(e.target.value))}
+                className="rp-select"
+              >
+                {periods.map((p) => {
+                  const rangeLabel = `${formatDateIndo(p.tanggal_mulai)} s/d ${formatDateIndo(p.tanggal_selesai)}`;
+                  const isNamedByRange = p.nama_periode.includes("s/d");
+                  const optionText = isNamedByRange
+                    ? `${p.nama_periode} — [${p.status}]`
+                    : `${p.nama_periode} (${rangeLabel}) — [${p.status}]`;
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {optionText}
+                    </option>
+                  );
+                })}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(true)}
+                className="btn-history-trigger"
+                title="Kelola & tinjau riwayat seluruh periode evaluasi"
+              >
+                <History size={13} />
+                <span>Histori ({periods.length})</span>
+              </button>
+            </div>
           )}
 
           {activePeriod && (
@@ -1881,6 +2056,384 @@ export default function RewardPunishmentPage() {
         </div>
       )}
 
+      {/* 8. Modal Histori Periode */}
+      {showHistoryModal && (
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setShowHistoryModal(false); }}>
+          <div className="modal-card modal-history-card">
+            <div className="modal-header">
+              <div className="modal-title-wrap">
+                <h3 className="modal-title">
+                  <History size={18} style={{ color: "var(--red, #b3212f)" }} />
+                  <span>Histori Periode Reward &amp; Punishment</span>
+                </h3>
+                <p className="modal-subtitle-minimal">
+                  Kelola dan tinjau seluruh histori periode evaluasi katering PT JAI ({periods.length} periode tercatat).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="btn-close-modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-history-body">
+              {/* Search bar */}
+              <div style={{ position: "relative", marginBottom: 14 }}>
+                <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan nama periode, tanggal, atau target bulan..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className="history-search-input"
+                />
+                {historySearch && (
+                  <button
+                    type="button"
+                    onClick={() => setHistorySearch("")}
+                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {filteredHistoryPeriods.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "36px 16px", color: "#64748b" }}>
+                  <History size={32} style={{ color: "#cbd5e1", margin: "0 auto 8px" }} />
+                  <p style={{ fontWeight: 700, margin: "0 0 4px 0", color: "#0f172a" }}>Tidak ada periode yang sesuai</p>
+                  <p style={{ fontSize: 12, margin: 0 }}>
+                    {historySearch ? "Coba ubah kata kunci pencarian Anda." : "Belum ada periode evaluasi yang dibuat."}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="history-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 38, textAlign: "center" }}>NO</th>
+                        <th>NAMA PERIODE</th>
+                        <th>RENTANG EVALUASI</th>
+                        <th>TARGET BULAN</th>
+                        <th>STATUS</th>
+                        <th>SUMBER PUNISHMENT</th>
+                        <th style={{ textAlign: "right", minWidth: 220 }}>AKSI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredHistoryPeriods.map((p, idx) => {
+                        const isCurrent = selectedPeriodId === p.id;
+                        const isFinalStatus = p.status === "FINAL";
+                        return (
+                          <tr key={p.id} className={isCurrent ? "row-current" : ""}>
+                            <td style={{ textAlign: "center", color: "#64748b", fontWeight: 600 }}>{idx + 1}</td>
+                            <td>
+                              <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                                {p.nama_periode}
+                                {isCurrent && (
+                                  <span className="badge-active-tag">Sedang Dibuka</span>
+                                )}
+                              </div>
+                              {p.catatan && (
+                                <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>{p.catatan}</div>
+                              )}
+                            </td>
+                            <td style={{ whiteSpace: "nowrap" }}>
+                              <div style={{ fontWeight: 600, color: "#334155" }}>
+                                {formatDateIndo(p.tanggal_mulai)} s/d {formatDateIndo(p.tanggal_selesai)}
+                              </div>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600, color: "#0f172a" }}>{p.target_bulan_berikutnya || "—"}</span>
+                            </td>
+                            <td>
+                              <span className={`rp-status-badge ${isFinalStatus ? "status-final" : "status-draft"}`}>
+                                {isFinalStatus ? <Lock size={11} /> : <Clock size={11} />}
+                                <span>{p.status}</span>
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  padding: "2px 7px",
+                                  borderRadius: "4px",
+                                  fontWeight: 600,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  backgroundColor: p.punishment_source_status === "FINAL" ? "#ecfdf5" : "#fffbeb",
+                                  color: p.punishment_source_status === "FINAL" ? "#047857" : "#b45309",
+                                  border: `1px solid ${p.punishment_source_status === "FINAL" ? "#a7f3d0" : "#fde68a"}`
+                                }}
+                              >
+                                {p.punishment_source_status}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="action-pill-group justify-end">
+                                <button
+                                  type="button"
+                                  className="btn-pill btn-pill-view"
+                                  onClick={() => {
+                                    setSelectedPeriodId(p.id);
+                                    setShowHistoryModal(false);
+                                    showToast(`Periode '${p.nama_periode}' dibuka`, "info");
+                                  }}
+                                  title="Buka dan lihat laporan periode ini"
+                                >
+                                  <Eye size={12} />
+                                  <span>Lihat</span>
+                                </button>
+
+                                {canEdit && (
+                                  <button
+                                    type="button"
+                                    className="btn-pill btn-pill-edit"
+                                    onClick={() => handleOpenEditPeriod(p)}
+                                    title="Edit info periode ini"
+                                  >
+                                    <Edit2 size={12} />
+                                    <span>Edit</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  className="btn-pill btn-pill-excel"
+                                  onClick={() => triggerRewardPunishmentExcelDownload(p.id, p.nama_periode)}
+                                  title="Unduh laporan Excel (.xlsx)"
+                                >
+                                  <FileSpreadsheet size={12} />
+                                  <span>Excel</span>
+                                </button>
+
+                                {canEdit && (p.status !== "FINAL" || isAdmin) && (
+                                  <button
+                                    type="button"
+                                    className="btn-pill btn-pill-delete"
+                                    onClick={() => setDeletingPeriod(p)}
+                                    title="Hapus periode laporan ini"
+                                  >
+                                    <Trash2 size={12} />
+                                    <span>Hapus</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="btn btn-secondary"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Modal Edit Periode */}
+      {showEditPeriodModal && editingPeriod && (
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget && !savingEditPeriod) { setShowEditPeriodModal(false); setEditingPeriod(null); } }}>
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3 className="modal-title">
+                <Edit2 size={18} style={{ color: "var(--red, #b3212f)" }} />
+                <span>Edit Info Periode Evaluasi</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setShowEditPeriodModal(false); setEditingPeriod(null); }}
+                className="btn-close-modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPeriod} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">NAMA PERIODE *</label>
+                <input
+                  type="text"
+                  required
+                  value={editPeriodForm.nama_periode}
+                  onChange={(e) =>
+                    setEditPeriodForm({ ...editPeriodForm, nama_periode: e.target.value })
+                  }
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label className="form-label">TANGGAL MULAI *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editPeriodForm.tanggal_mulai}
+                    onChange={(e) => handleEditStartDateChange(e.target.value)}
+                    className={`form-input ${editDateError ? "border-red" : ""}`}
+                  />
+                  <span className="form-date-hint">
+                    {formatDateIndo(editPeriodForm.tanggal_mulai)}
+                  </span>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">TANGGAL SELESAI *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editPeriodForm.tanggal_selesai}
+                    onChange={(e) => handleEditEndDateChange(e.target.value)}
+                    className={`form-input ${editDateError ? "border-red" : ""}`}
+                  />
+                  <span className="form-date-hint">
+                    {formatDateIndo(editPeriodForm.tanggal_selesai)}
+                  </span>
+                </div>
+              </div>
+
+              {editDateError && (
+                <div className="form-date-error">
+                  <AlertCircle size={14} />
+                  <span>{editDateError}</span>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">TARGET BULAN BERIKUTNYA *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: November 2026"
+                  value={editPeriodForm.target_bulan_berikutnya}
+                  onChange={(e) =>
+                    setEditPeriodForm({ ...editPeriodForm, target_bulan_berikutnya: e.target.value })
+                  }
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Catatan Tambahan</label>
+                <textarea
+                  rows={2}
+                  placeholder="Catatan tambahan bila ada..."
+                  value={editPeriodForm.catatan}
+                  onChange={(e) =>
+                    setEditPeriodForm({ ...editPeriodForm, catatan: e.target.value })
+                  }
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Keterangan / Deskripsi</label>
+                <textarea
+                  rows={2}
+                  placeholder="Keterangan evaluasi bila ada..."
+                  value={editPeriodForm.keterangan}
+                  onChange={(e) =>
+                    setEditPeriodForm({ ...editPeriodForm, keterangan: e.target.value })
+                  }
+                  className="form-input"
+                />
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditPeriodModal(false); setEditingPeriod(null); }}
+                  className="btn btn-secondary"
+                  disabled={savingEditPeriod}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditPeriod}
+                  className="btn btn-primary"
+                >
+                  {savingEditPeriod && <Loader2 size={14} className="animate-spin" />}
+                  <span>{savingEditPeriod ? "Menyimpan..." : "Simpan Perubahan"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Modal Konfirmasi Hapus Periode */}
+      {deletingPeriod && (
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget && !isDeletingPeriod) setDeletingPeriod(null); }}>
+          <div className="modal-card modal-sm">
+            <div className="finalize-header">
+              <div className="finalize-icon-box" style={{ background: "#fee2e2", color: "#dc2626" }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 className="modal-title" style={{ color: "#b91c1c" }}>Konfirmasi Hapus Periode</h3>
+                <p className="modal-sub">
+                  Periode: <strong>{deletingPeriod.nama_periode}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="finalize-warning" style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#991b1b" }}>
+              <p className="warning-heading" style={{ color: "#b91c1c" }}>
+                <AlertCircle size={14} /> Peringatan:
+              </p>
+              <p style={{ margin: 0 }}>
+                Apakah Anda yakin ingin menghapus periode laporan <strong>{deletingPeriod.nama_periode}</strong> ({formatDateIndo(deletingPeriod.tanggal_mulai)} s/d {formatDateIndo(deletingPeriod.tanggal_selesai)})?
+                Seluruh kalkulasi reward, penalti, dan penyesuaian order pada periode ini akan dihapus secara permanen.
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setDeletingPeriod(null)}
+                className="btn btn-secondary"
+                disabled={isDeletingPeriod}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeletePeriod}
+                disabled={isDeletingPeriod}
+                className="btn"
+                style={{
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 700,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {isDeletingPeriod && <Loader2 size={14} className="animate-spin" />}
+                <span>{isDeletingPeriod ? "Menghapus..." : "Ya, Hapus Periode"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 8. Scoped Enterprise Styling */}
       <style jsx>{`
         .rp-container {
@@ -3032,11 +3585,110 @@ export default function RewardPunishmentPage() {
           font-weight: 800;
           margin: 0 0 4px 0;
         }
-        .empty-desc {
+        .history-table {
+          width: 100%;
+          border-collapse: collapse;
           font-size: 12.5px;
-          color: #64748b;
-          max-width: 400px;
-          margin: 0 auto 14px auto;
+        }
+        .history-table th {
+          background: #f8fafc;
+          border-bottom: 1.5px solid var(--border-strong, #cbd5e1);
+          padding: 9px 12px;
+          font-size: 11px;
+          font-weight: 800;
+          color: #475569;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .history-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #f1f5f9;
+          vertical-align: middle;
+        }
+        .history-table tr:hover td {
+          background: #f8fafc;
+        }
+        .history-table tr.row-current td {
+          background: #f0fdf4;
+        }
+        .badge-active-tag {
+          font-size: 10px;
+          font-weight: 700;
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #bbf7d0;
+          border-radius: 4px;
+          padding: 1px 6px;
+          margin-left: 6px;
+          display: inline-block;
+        }
+        .btn-pill-view {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+        .btn-pill-view:hover {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+        .btn-pill-delete {
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+        .btn-pill-delete:hover {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+        .btn-pill-excel {
+          background: #f0fdf4;
+          color: #15803d;
+          border: 1px solid #bbf7d0;
+        }
+        .btn-pill-excel:hover {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .btn-history-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 10px;
+          font-size: 11.5px;
+          font-weight: 700;
+          border-radius: 6px;
+          background: #f8fafc;
+          color: #334155;
+          border: 1px solid var(--border-strong, #cbd5e1);
+          cursor: pointer;
+          transition: all 120ms ease;
+          white-space: nowrap;
+        }
+        .btn-history-trigger:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+          color: #0f172a;
+        }
+        .modal-history-card {
+          max-width: 920px;
+        }
+        .modal-history-body {
+          padding: 16px 20px;
+          max-height: 520px;
+          overflow-y: auto;
+        }
+        .history-search-input {
+          width: 100%;
+          font-size: 12.5px;
+          padding: 8px 12px 8px 36px;
+          border: 1px solid var(--border-strong, #cbd5e1);
+          border-radius: 6px;
+          outline: none;
+          background: #ffffff;
+        }
+        .history-search-input:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
         }
       `}</style>
     </div>
