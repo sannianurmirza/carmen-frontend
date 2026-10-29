@@ -4349,26 +4349,45 @@ export const submitMenuPlanApprovalApi = (id: number): Promise<MonthlyMenuPlanSu
   });
 };
 
+export const deleteMenuPlanApi = (id: number): Promise<{ success: boolean; message: string }> => {
+  return request<{ success: boolean; message: string }>(`/menu-plans/${id}`, {
+    method: "DELETE",
+  });
+};
+
 export const exportMenuPlanExcelApi = async (
   id: number
 ): Promise<{ blob: Blob; filename: string }> => {
-  const res = await fetch(`${getBaseUrl()}/menu-plans/${id}/export`, {
-    credentials: "include",
-  });
-  if (!res.ok) {
-    let msg = "Gagal mengunduh Excel Rencana Menu.";
-    try {
-      const err = await res.json();
-      if (err?.detail) msg = err.detail;
-    } catch {}
-    throw new Error(msg);
+  try {
+    const { generateMenuPlanExcelBuffer } = await import("./exportExcelMenuPlan");
+    const planDetail = await getMenuPlanDetailApi(id);
+    const buffer = await generateMenuPlanExcelBuffer(planDetail);
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const cateringClean = (planDetail.catering_nama || "Katering").replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const monthPad = String(planDetail.effective_month || 1).padStart(2, "0");
+    const filename = `Rencana_Menu_${cateringClean}_${planDetail.effective_year || 2026}_${monthPad}_v${planDetail.version || 1}.xlsx`;
+    return { blob, filename };
+  } catch (clientErr: any) {
+    const res = await fetch(`${getBaseUrl()}/menu-plans/${id}/export`, {
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let msg = clientErr?.message || "Gagal mengunduh Excel Rencana Menu.";
+      try {
+        const err = await res.json();
+        if (err?.detail) msg = err.detail;
+      } catch {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const filename = getDownloadFilename(
+      res.headers.get("Content-Disposition"),
+      `Rencana_Menu_${id}.xlsx`
+    );
+    return { blob, filename };
   }
-  const blob = await res.blob();
-  const filename = getDownloadFilename(
-    res.headers.get("Content-Disposition"),
-    `Rencana_Menu_${id}.xlsx`
-  );
-  return { blob, filename };
 };
 
 export const getActiveMenuForKaloriApi = (
