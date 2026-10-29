@@ -95,6 +95,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
 
   // Tab State: "detail" (Perhitungan & Evaluasi) vs "riwayat" (Riwayat Periode)
   const [activeTab, setActiveTab] = useState<"detail" | "riwayat">(initialTab);
+  const appBase = process.env.NEXT_PUBLIC_BASE_PATH || "/carmen-frontend";
 
   useEffect(() => {
     if (initialTab) {
@@ -866,7 +867,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
           onClick={() => {
             setActiveTab("detail");
             if (typeof window !== "undefined") {
-              window.history.replaceState(null, "", "/reward-punishment");
+              window.history.replaceState(null, "", `${appBase}/reward-punishment/`);
             }
           }}
           style={{
@@ -905,7 +906,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
             setActiveTab("riwayat");
             loadPeriods();
             if (typeof window !== "undefined") {
-              window.history.replaceState(null, "", "/reward-punishment/riwayat");
+              window.history.replaceState(null, "", `${appBase}/reward-punishment/riwayat/`);
             }
           }}
           style={{
@@ -988,7 +989,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                 onClick={() => {
                   setActiveTab("riwayat");
                   if (typeof window !== "undefined") {
-                    window.history.replaceState(null, "", "/reward-punishment/riwayat");
+                    window.history.replaceState(null, "", `${appBase}/reward-punishment/riwayat/`);
                   }
                 }}
                 className="btn-history-trigger"
@@ -2397,7 +2398,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                                   setSelectedPeriodId(p.id);
                                   setActiveTab("detail");
                                   if (typeof window !== "undefined") {
-                                    window.history.replaceState(null, "", "/reward-punishment");
+                                    window.history.replaceState(null, "", `${appBase}/reward-punishment/`);
                                   }
                                   showToast(`Membuka evaluasi periode '${p.nama_periode}'`, "info");
                                 }}
@@ -2574,7 +2575,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                               setSelectedPeriodId(p.id);
                               setActiveTab("detail");
                               if (typeof window !== "undefined") {
-                                window.history.replaceState(null, "", "/reward-punishment");
+                                window.history.replaceState(null, "", `${appBase}/reward-punishment/`);
                               }
                               showToast(`Membuka evaluasi periode '${p.nama_periode}'`, "info");
                             }}
