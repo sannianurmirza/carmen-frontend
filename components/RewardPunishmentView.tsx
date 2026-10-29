@@ -2016,165 +2016,157 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
       {/* TAB 2: RIWAYAT PERIODE REWARD & PUNISHMENT */}
       {/* ========================================================================= */}
       {activeTab === "riwayat" && (
-        <div id="panel-riwayat-rp" role="tabpanel" aria-labelledby="tab-riwayat-rp" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Summary Stat Cards */}
-          <div className="history-stat-grid">
-            <div className="history-stat-card">
-              <div className="hstat-icon-wrap icon-total">
-                <History size={20} />
-              </div>
-              <div className="hstat-content">
-                <span className="hstat-label">Total Periode Tercatat</span>
-                <span className="hstat-value">{historyStats.total}</span>
-              </div>
-            </div>
+        <div id="panel-riwayat-rp" role="tabpanel" aria-labelledby="tab-riwayat-rp">
 
-            <div className="history-stat-card">
-              <div className="hstat-icon-wrap icon-final">
-                <Lock size={20} />
-              </div>
-              <div className="hstat-content">
-                <span className="hstat-label">Periode Final (Terkunci)</span>
-                <span className="hstat-value">{historyStats.finalCount}</span>
-              </div>
-            </div>
-
-            <div className="history-stat-card">
-              <div className="hstat-icon-wrap icon-draft">
-                <Clock size={20} />
-              </div>
-              <div className="hstat-content">
-                <span className="hstat-label">Periode Draft (Aktif)</span>
-                <span className="hstat-value">{historyStats.draftCount}</span>
-              </div>
-            </div>
-
-            <div className="history-stat-card">
-              <div className="hstat-icon-wrap icon-active">
-                <Award size={20} />
-              </div>
-              <div className="hstat-content">
-                <span className="hstat-label">Periode Sedang Dibuka</span>
-                <span className="hstat-value text-ellipsis" title={historyStats.activeName}>
-                  {historyStats.activeName}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters & Actions Card */}
-          <div className="history-filter-card">
-            <div className="history-filter-row">
+                    {/* 1. Filter Bar (Styled identical to Komplain) */}
+          <div
+            className="card"
+            style={{
+              padding: "18px 20px",
+              marginBottom: 20,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            }}
+          >
+            <div className="filters-grid">
               {/* Search */}
-              <div className="history-search-wrap">
-                <Search size={16} className="history-search-icon" />
-                <input
-                  type="text"
-                  placeholder="Cari nama periode, rentang tanggal, atau target bulan..."
-                  value={historySearch}
-                  onChange={(e) => {
-                    setHistorySearch(e.target.value);
-                    setHistoryPage(1);
+              <div className="filter-col-search">
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginBottom: 5,
+                    color: "var(--text-muted, #64748b)",
                   }}
-                  className="history-filter-search"
-                />
-                {historySearch && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHistorySearch("");
+                >
+                  Cari Periode / Keterangan
+                </label>
+                <div style={{ position: "relative", width: "100%" }}>
+                  <Search
+                    size={15}
+                    style={{
+                      position: "absolute",
+                      left: 11,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "var(--text-muted, #94a3b8)",
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Ketik kata kunci..."
+                    value={historySearch}
+                    onChange={(e) => {
+                      setHistorySearch(e.target.value);
                       setHistoryPage(1);
                     }}
-                    className="history-search-clear"
-                    title="Hapus pencarian"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+                    style={{
+                      width: "100%",
+                      height: 38,
+                      border: "1px solid var(--border-strong, #cbd5e1)",
+                      borderRadius: "var(--radius-sm, 4px)",
+                      padding: "0 34px 0 34px",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      backgroundColor: "var(--card, #ffffff)",
+                      color: "var(--text, #0f172a)",
+                      boxSizing: "border-box",
+                      outline: "none",
+                    }}
+                  />
+                  {historySearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHistorySearch("");
+                        setHistoryPage(1);
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "#94a3b8",
+                        cursor: "pointer",
+                        padding: 4,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                      title="Hapus pencarian"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Status Filter */}
-              <div className="history-filter-select-wrap">
-                <label className="history-filter-label">Status:</label>
-                <select
-                  value={historyFilterStatus}
-                  onChange={(e) => {
-                    setHistoryFilterStatus(e.target.value as "ALL" | "DRAFT" | "FINAL");
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginBottom: 5,
+                    color: "var(--text-muted, #64748b)",
+                  }}
+                >
+                  Status
+                </label>
+                <CustomSelect
+                  value={historyFilterStatus === "ALL" ? "" : historyFilterStatus}
+                  placeholder="Semua Status"
+                  options={[
+                    { value: "FINAL", label: "FINAL (Terkunci)" },
+                    { value: "DRAFT", label: "DRAFT (Dalam Proses)" },
+                  ]}
+                  onChange={(val) => {
+                    setHistoryFilterStatus((val as "ALL" | "DRAFT" | "FINAL") || "ALL");
                     setHistoryPage(1);
                   }}
-                  className="history-filter-select"
-                >
-                  <option value="ALL">Semua Status</option>
-                  <option value="FINAL">FINAL (Terkunci)</option>
-                  <option value="DRAFT">DRAFT (Dalam Proses)</option>
-                </select>
+                />
               </div>
 
               {/* Year Filter */}
-              {availableYears.length > 0 && (
-                <div className="history-filter-select-wrap">
-                  <label className="history-filter-label">Tahun:</label>
-                  <select
-                    value={historyFilterYear}
-                    onChange={(e) => {
-                      setHistoryFilterYear(e.target.value);
-                      setHistoryPage(1);
-                    }}
-                    className="history-filter-select"
-                  >
-                    <option value="ALL">Semua Tahun</option>
-                    {availableYears.map((yr) => (
-                      <option key={yr} value={yr}>
-                        Tahun {yr}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Reset filter button */}
-              {(historySearch || historyFilterStatus !== "ALL" || historyFilterYear !== "ALL") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHistorySearch("");
-                    setHistoryFilterStatus("ALL");
-                    setHistoryFilterYear("ALL");
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginBottom: 5,
+                    color: "var(--text-muted, #64748b)",
+                  }}
+                >
+                  Tahun
+                </label>
+                <CustomSelect
+                  value={historyFilterYear === "ALL" ? "" : historyFilterYear}
+                  placeholder="Semua Tahun"
+                  options={availableYears.map((yr) => ({
+                    value: yr,
+                    label: `Tahun ${yr}`,
+                  }))}
+                  onChange={(val) => {
+                    setHistoryFilterYear(val || "ALL");
                     setHistoryPage(1);
                   }}
-                  className="btn btn-secondary history-btn-reset"
-                  title="Reset seluruh filter"
-                >
-                  <RefreshCw size={13} />
-                  <span>Reset</span>
-                </button>
-              )}
+                />
+              </div>
 
-              {/* Action: Create New Period */}
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(true)}
-                  className="btn btn-primary history-btn-create"
-                >
-                  <Plus size={15} />
-                  <span>Buat Periode Baru</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Table Card */}
-          <div className="history-table-card">
-            {filteredHistoryPeriods.length === 0 ? (
-              <div className="history-empty-state">
-                <History size={40} className="history-empty-icon" />
-                <h4 className="history-empty-title">Tidak ada periode evaluasi yang sesuai</h4>
-                <p className="history-empty-desc">
-                  {historySearch || historyFilterStatus !== "ALL" || historyFilterYear !== "ALL"
-                    ? "Coba ubah kata kunci pencarian atau reset filter untuk menampilkan kembali data."
-                    : "Belum ada periode reward & punishment yang tercatat di sistem."}
-                </p>
+              {/* Actions: Reset & Buat Periode Baru */}
+              <div
+                className="filter-col-actions"
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  flexWrap: "wrap",
+                }}
+              >
                 {(historySearch || historyFilterStatus !== "ALL" || historyFilterYear !== "ALL") && (
                   <button
                     type="button"
@@ -2184,182 +2176,566 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                       setHistoryFilterYear("ALL");
                       setHistoryPage(1);
                     }}
-                    className="btn btn-secondary"
+                    className="btn btn-outline"
+                    style={{
+                      height: 38,
+                      fontSize: 13,
+                      padding: "0 12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                    }}
+                    title="Reset semua filter"
                   >
-                    Reset Filter
+                    <RotateCcw size={14} />
+                    <span>Reset</span>
+                  </button>
+                )}
+
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(true)}
+                    className="btn btn-primary"
+                    style={{
+                      height: 38,
+                      fontSize: 13,
+                      padding: "0 14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                    }}
+                    title="Buat Periode Baru"
+                  >
+                    <Plus size={15} />
+                    <span>Periode Baru</span>
                   </button>
                 )}
               </div>
-            ) : (
-              <>
-                <div className="history-table-wrapper">
-                  <table className="history-dedicated-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: 44, textAlign: "center" }}>NO</th>
-                        <th style={{ minWidth: 220 }}>NAMA PERIODE</th>
-                        <th style={{ minWidth: 200 }}>RENTANG EVALUASI</th>
-                        <th style={{ minWidth: 140 }}>TARGET BULAN</th>
-                        <th style={{ width: 120 }}>STATUS</th>
-                        <th style={{ width: 150 }}>SUMBER PUNISHMENT</th>
-                        <th style={{ minWidth: 180 }}>CATATAN / KETERANGAN</th>
-                        <th style={{ minWidth: 260, textAlign: "right" }}>AKSI</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedHistoryPeriods.map((p, idx) => {
-                        const isCurrent = selectedPeriodId === p.id;
-                        const isFinalStatus = p.status === "FINAL";
-                        const rowNumber = (historyPage - 1) * historyPageSize + idx + 1;
-                        return (
-                          <tr key={p.id} className={isCurrent ? "row-current" : ""}>
-                            <td style={{ textAlign: "center", color: "#64748b", fontWeight: 700 }}>
-                              {rowNumber}
-                            </td>
-                            <td>
-                              <div className="history-cell-name">
-                                <span className="history-period-name">{p.nama_periode}</span>
-                                {isCurrent && (
-                                  <span className="badge-active-tag">Sedang Dibuka</span>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="history-date-range">
-                                <Calendar size={13} style={{ color: "var(--red-dark, #8f1a25)", flexShrink: 0 }} />
-                                <span>{formatDateIndo(p.tanggal_mulai)} s/d {formatDateIndo(p.tanggal_selesai)}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span className="history-target-month">{p.target_bulan_berikutnya || "—"}</span>
-                            </td>
-                            <td>
-                              <span className={`rp-status-badge ${isFinalStatus ? "status-final" : "status-draft"}`}>
-                                {isFinalStatus ? <Lock size={11} /> : <Clock size={11} />}
-                                <span>{p.status}</span>
-                              </span>
-                            </td>
-                            <td>
-                              <span
+            </div>
+          </div>
+
+          {/* 2. Table Card (Styled identical to Komplain) */}
+          <div
+            className="card"
+            style={{
+              padding: 0,
+              overflow: "hidden",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            }}
+          >
+            {/* Desktop Table */}
+            <div className="rp-desktop-table" style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 13,
+                  textAlign: "left",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      borderBottom: "2px solid var(--border, #e2e8f0)",
+                      backgroundColor: "var(--bg-subtle, #f8fafc)",
+                    }}
+                  >
+                    <th style={{ padding: "10px 8px", width: 44, textAlign: "center", fontWeight: 700 }}>
+                      No
+                    </th>
+                    <th style={{ padding: "10px 12px", minWidth: 200, fontWeight: 700 }}>Nama Periode</th>
+                    <th style={{ padding: "10px 12px", minWidth: 180, fontWeight: 700 }}>Rentang Evaluasi</th>
+                    <th style={{ padding: "10px 10px", minWidth: 120, fontWeight: 700 }}>Target Bulan</th>
+                    <th style={{ padding: "10px 10px", width: 110, fontWeight: 700 }}>Status</th>
+                    <th style={{ padding: "10px 10px", width: 130, fontWeight: 700 }}>Sumber Punishment</th>
+                    <th style={{ padding: "10px 12px", minWidth: 160, fontWeight: 700 }}>Catatan</th>
+                    <th style={{ padding: "10px 8px", width: 155, minWidth: 155, textAlign: "center", fontWeight: 700, whiteSpace: "nowrap" }}>
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHistoryPeriods.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ padding: "40px 16px", textAlign: "center", color: "var(--text-muted, #64748b)" }}>
+                        <History size={28} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
+                        <p style={{ margin: 0, fontWeight: 600 }}>Belum ada data periode evaluasi.</p>
+                        <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+                          {periods.length > 0 ? "Tidak ada periode yang cocok dengan filter." : "Silakan buat periode evaluasi baru."}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedHistoryPeriods.map((p, idx) => {
+                      const isCurrent = selectedPeriodId === p.id;
+                      const isFinalStatus = p.status === "FINAL";
+                      const rowNumber = (historyPage - 1) * historyPageSize + idx + 1;
+                      return (
+                        <tr
+                          key={p.id}
+                          style={{
+                            borderBottom: "1px solid var(--border, #e2e8f0)",
+                            backgroundColor: isCurrent ? "rgba(143, 26, 37, 0.035)" : "transparent",
+                            transition: "background-color 100ms ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isCurrent) e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.015)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = isCurrent ? "rgba(143, 26, 37, 0.035)" : "transparent";
+                          }}
+                        >
+                          {/* 1. No */}
+                          <td style={{ padding: "10px 8px", textAlign: "center", fontWeight: 500, color: "var(--text-muted, #64748b)" }}>
+                            {rowNumber}
+                          </td>
+
+                          {/* 2. Nama Periode */}
+                          <td style={{ padding: "10px 12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 700, color: "var(--text, #0f172a)" }}>{p.nama_periode}</span>
+                              {isCurrent && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    background: "#dcfce7",
+                                    color: "#15803d",
+                                    border: "1px solid #bbf7d0",
+                                    borderRadius: 4,
+                                    padding: "1px 6px",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Sedang Dibuka
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 3. Rentang Evaluasi */}
+                          <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#334155", fontSize: 12.5 }}>
+                              <Calendar size={13} style={{ color: "var(--red-dark, #8f1a25)", flexShrink: 0 }} />
+                              <span>{formatDateIndo(p.tanggal_mulai)} s/d {formatDateIndo(p.tanggal_selesai)}</span>
+                            </div>
+                          </td>
+
+                          {/* 4. Target Bulan */}
+                          <td style={{ padding: "10px 10px", whiteSpace: "nowrap", fontWeight: 600 }}>
+                            {p.target_bulan_berikutnya || "—"}
+                          </td>
+
+                          {/* 5. Status */}
+                          <td style={{ padding: "10px 10px", whiteSpace: "nowrap" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "2px 8px",
+                                borderRadius: 9999,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                backgroundColor: isFinalStatus ? "#f0fdf4" : "#fffbeb",
+                                color: isFinalStatus ? "#15803d" : "#b45309",
+                                border: isFinalStatus ? "1px solid #bbf7d0" : "1px solid #fde68a",
+                              }}
+                            >
+                              {isFinalStatus ? <Lock size={11} /> : <Clock size={11} />}
+                              <span>{p.status}</span>
+                            </span>
+                          </td>
+
+                          {/* 6. Sumber Punishment */}
+                          <td style={{ padding: "10px 10px", whiteSpace: "nowrap" }}>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                padding: "2px 8px",
+                                borderRadius: 4,
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                backgroundColor: p.punishment_source_status === "FINAL" ? "#ecfdf5" : "#fffbeb",
+                                color: p.punishment_source_status === "FINAL" ? "#047857" : "#b45309",
+                                border: `1px solid ${p.punishment_source_status === "FINAL" ? "#a7f3d0" : "#fde68a"}`,
+                              }}
+                            >
+                              {p.punishment_source_status}
+                            </span>
+                          </td>
+
+                          {/* 7. Catatan */}
+                          <td style={{ padding: "10px 12px", lineHeight: "1.4" }}>
+                            <div
+                              style={{
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                wordBreak: "break-word",
+                                color: "#475569",
+                                fontSize: 12.5,
+                              }}
+                              title={p.catatan || p.keterangan || ""}
+                            >
+                              {p.catatan || p.keterangan || "—"}
+                            </div>
+                          </td>
+
+                          {/* 8. Aksi (Matching exact Komplain action buttons!) */}
+                          <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPeriodId(p.id);
+                                  setActiveTab("detail");
+                                  if (typeof window !== "undefined") {
+                                    window.history.replaceState(null, "", "/reward-punishment");
+                                  }
+                                  showToast(`Membuka evaluasi periode '${p.nama_periode}'`, "info");
+                                }}
+                                aria-label={`Lihat detail evaluasi ${p.nama_periode}`}
+                                title="Lihat Detail & Perhitungan"
+                                className="btn btn-outline"
                                 style={{
-                                  fontSize: "11px",
-                                  padding: "3px 8px",
-                                  borderRadius: "4px",
-                                  fontWeight: 600,
+                                  width: 30,
+                                  height: 30,
+                                  padding: 0,
                                   display: "inline-flex",
                                   alignItems: "center",
-                                  backgroundColor: p.punishment_source_status === "FINAL" ? "#ecfdf5" : "#fffbeb",
-                                  color: p.punishment_source_status === "FINAL" ? "#047857" : "#b45309",
-                                  border: `1px solid ${p.punishment_source_status === "FINAL" ? "#a7f3d0" : "#fde68a"}`
+                                  justifyContent: "center",
+                                  borderRadius: 4,
                                 }}
                               >
-                                {p.punishment_source_status}
-                              </span>
-                            </td>
-                            <td>
-                              <span className="history-cell-notes">{p.catatan || p.keterangan || "—"}</span>
-                            </td>
-                            <td>
-                              <div className="action-pill-group justify-end">
+                                <Eye size={14} />
+                              </button>
+
+                              {canEdit && (
                                 <button
                                   type="button"
-                                  className="btn-pill btn-pill-view"
-                                  onClick={() => {
-                                    setSelectedPeriodId(p.id);
-                                    setActiveTab("detail");
-                                    if (typeof window !== "undefined") {
-                                      window.history.replaceState(null, "", "/reward-punishment");
-                                    }
-                                    showToast(`Membuka evaluasi periode '${p.nama_periode}'`, "info");
+                                  onClick={() => handleOpenEditPeriod(p)}
+                                  aria-label={`Edit periode ${p.nama_periode}`}
+                                  title="Edit Periode"
+                                  className="btn btn-outline"
+                                  style={{
+                                    width: 30,
+                                    height: 30,
+                                    padding: 0,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: 4,
                                   }}
-                                  title="Lihat detail evaluasi & perhitungan periode ini"
                                 >
-                                  <Eye size={12} />
-                                  <span>Lihat Detail</span>
+                                  <Edit2 size={14} />
                                 </button>
+                              )}
 
-                                {canEdit && (
-                                  <button
-                                    type="button"
-                                    className="btn-pill btn-pill-edit"
-                                    onClick={() => handleOpenEditPeriod(p)}
-                                    title="Edit rentang tanggal dan nama periode"
-                                  >
-                                    <Edit2 size={12} />
-                                    <span>Edit</span>
-                                  </button>
-                                )}
+                              <button
+                                type="button"
+                                onClick={() => triggerRewardPunishmentExcelDownload(p.id, p.nama_periode)}
+                                aria-label="Unduh Excel"
+                                title="Unduh Excel"
+                                className="btn btn-outline"
+                                style={{
+                                  width: 30,
+                                  height: 30,
+                                  padding: 0,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: 4,
+                                }}
+                              >
+                                <FileSpreadsheet size={14} />
+                              </button>
 
+                              {canEdit && (p.status !== "FINAL" || isAdmin) && (
                                 <button
                                   type="button"
-                                  className="btn-pill btn-pill-excel"
-                                  onClick={() => triggerRewardPunishmentExcelDownload(p.id, p.nama_periode)}
-                                  title="Unduh laporan Excel (.xlsx)"
+                                  onClick={() => setDeletingPeriod(p)}
+                                  aria-label={`Hapus periode ${p.nama_periode}`}
+                                  title="Hapus Periode"
+                                  className="btn btn-outline"
+                                  style={{
+                                    width: 30,
+                                    height: 30,
+                                    padding: 0,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: 4,
+                                    color: "var(--red, #ef4444)",
+                                  }}
                                 >
-                                  <FileSpreadsheet size={12} />
-                                  <span>Excel</span>
+                                  <Trash2 size={14} />
                                 </button>
-
-                                {canEdit && (p.status !== "FINAL" || isAdmin) && (
-                                  <button
-                                    type="button"
-                                    className="btn-pill btn-pill-delete"
-                                    onClick={() => setDeletingPeriod(p)}
-                                    title="Hapus periode evaluasi ini"
-                                  >
-                                    <Trash2 size={12} />
-                                    <span>Hapus</span>
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination Footer */}
-                <div className="history-table-footer">
-                  <div className="history-table-info">
-                    Menampilkan <strong>{paginatedHistoryPeriods.length}</strong> dari <strong>{filteredHistoryPeriods.length}</strong> periode
-                    {filteredHistoryPeriods.length !== periods.length && ` (disaring dari total ${periods.length} periode)`}
-                  </div>
-                  {totalHistoryPages > 1 && (
-                    <div className="history-pagination-btns">
-                      <button
-                        type="button"
-                        onClick={() => setHistoryPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={historyPage === 1}
-                        className="btn-page-nav"
-                      >
-                        Sebelumnya
-                      </button>
-                      <div className="history-page-numbers">
-                        {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map((pg) => (
-                          <button
-                            key={pg}
-                            type="button"
-                            onClick={() => setHistoryPage(pg)}
-                            className={`btn-page-number ${historyPage === pg ? "active" : ""}`}
-                          >
-                            {pg}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setHistoryPage((prev) => Math.min(prev + 1, totalHistoryPages))}
-                        disabled={historyPage === totalHistoryPages}
-                        className="btn-page-nav"
-                      >
-                        Berikutnya
-                      </button>
-                    </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Tablet Card View (for mobile/tablet < 768px, identical to Komplain) */}
+            <div className="rp-tablet-cards">
+              {filteredHistoryPeriods.length === 0 ? (
+                <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-muted, #64748b)" }}>
+                  <History size={28} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
+                  <p style={{ margin: 0, fontWeight: 600 }}>Belum ada data periode evaluasi.</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+                    {periods.length > 0 ? "Tidak ada periode yang cocok dengan filter." : "Silakan buat periode baru."}
+                  </p>
                 </div>
-              </>
+              ) : (
+                paginatedHistoryPeriods.map((p, idx) => {
+                  const isCurrent = selectedPeriodId === p.id;
+                  const isFinalStatus = p.status === "FINAL";
+                  const rowNumber = (historyPage - 1) * historyPageSize + idx + 1;
+                  return (
+                    <div
+                      key={`tablet-p-${p.id}`}
+                      style={{
+                        padding: "16px 20px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        backgroundColor: isCurrent ? "rgba(143, 26, 37, 0.02)" : "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                      }}
+                    >
+                      {/* Baris 1: Header Tablet Card */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          borderBottom: "1px solid var(--border, #f1f5f9)",
+                          paddingBottom: 10,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              minWidth: 26,
+                              height: 24,
+                              padding: "0 6px",
+                              borderRadius: 4,
+                              backgroundColor: "var(--bg-subtle, #f1f5f9)",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: "var(--text-muted, #475569)",
+                            }}
+                          >
+                            #{rowNumber}
+                          </span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                            {p.nama_periode}
+                          </span>
+                          {isCurrent && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                background: "#dcfce7",
+                                color: "#15803d",
+                                border: "1px solid #bbf7d0",
+                                borderRadius: 4,
+                                padding: "1px 6px",
+                              }}
+                            >
+                              Sedang Dibuka
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Aksi di Kanan */}
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPeriodId(p.id);
+                              setActiveTab("detail");
+                              if (typeof window !== "undefined") {
+                                window.history.replaceState(null, "", "/reward-punishment");
+                              }
+                              showToast(`Membuka evaluasi periode '${p.nama_periode}'`, "info");
+                            }}
+                            title="Lihat Detail"
+                            className="btn btn-outline"
+                            style={{ width: 32, height: 32, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6 }}
+                          >
+                            <Eye size={15} />
+                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditPeriod(p)}
+                              title="Edit Periode"
+                              className="btn btn-outline"
+                              style={{ width: 32, height: 32, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6 }}
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => triggerRewardPunishmentExcelDownload(p.id, p.nama_periode)}
+                            title="Unduh Excel"
+                            className="btn btn-outline"
+                            style={{ width: 32, height: 32, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6 }}
+                          >
+                            <FileSpreadsheet size={15} />
+                          </button>
+                          {canEdit && (p.status !== "FINAL" || isAdmin) && (
+                            <button
+                              type="button"
+                              onClick={() => setDeletingPeriod(p)}
+                              title="Hapus Periode"
+                              className="btn btn-outline"
+                              style={{ width: 32, height: 32, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, color: "var(--red, #ef4444)" }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Baris 2: Info Grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div style={{ backgroundColor: "var(--bg-subtle, #f8fafc)", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border, #e2e8f0)" }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)", textTransform: "uppercase", letterSpacing: "0.03em", display: "block", marginBottom: 4 }}>
+                            Rentang Evaluasi
+                          </span>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text, #1e293b)" }}>
+                            {formatDateIndo(p.tanggal_mulai)} s/d {formatDateIndo(p.tanggal_selesai)}
+                          </span>
+                        </div>
+
+                        <div style={{ backgroundColor: "var(--bg-subtle, #f8fafc)", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--border, #e2e8f0)" }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)", textTransform: "uppercase", letterSpacing: "0.03em", display: "block", marginBottom: 4 }}>
+                            Status &amp; Target Bulan
+                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 3,
+                                padding: "2px 7px",
+                                borderRadius: 9999,
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                backgroundColor: isFinalStatus ? "#f0fdf4" : "#fffbeb",
+                                color: isFinalStatus ? "#15803d" : "#b45309",
+                                border: isFinalStatus ? "1px solid #bbf7d0" : "1px solid #fde68a",
+                              }}
+                            >
+                              {isFinalStatus ? <Lock size={10} /> : <Clock size={10} />}
+                              <span>{p.status}</span>
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>
+                              {p.target_bulan_berikutnya || "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {p.catatan && (
+                        <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", lineHeight: "1.4" }}>
+                          <strong>Catatan:</strong> {p.catatan}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Pagination Footer (Identical to Komplain) */}
+            {totalHistoryPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "14px 20px",
+                  borderTop: "1px solid var(--border, #e2e8f0)",
+                  backgroundColor: "var(--bg-subtle, #f8fafc)",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: 13, color: "var(--text-muted, #64748b)" }}>
+                  Menampilkan{" "}
+                  <strong>
+                    {filteredHistoryPeriods.length === 0 ? 0 : (historyPage - 1) * historyPageSize + 1}
+                  </strong>{" "}
+                  - <strong>{Math.min(historyPage * historyPageSize, filteredHistoryPeriods.length)}</strong> dari{" "}
+                  <strong>{filteredHistoryPeriods.length}</strong> periode
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button
+                    type="button"
+                    disabled={historyPage === 1}
+                    onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                    className="btn btn-outline"
+                    style={{
+                      height: 32,
+                      padding: "0 10px",
+                      fontSize: 12,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      opacity: historyPage === 1 ? 0.5 : 1,
+                    }}
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Sebelumnya</span>
+                  </button>
+
+                  <span style={{ fontSize: 13, fontWeight: 600, padding: "0 8px" }}>
+                    {historyPage} / {totalHistoryPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={historyPage === totalHistoryPages}
+                    onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                    className="btn btn-outline"
+                    style={{
+                      height: 32,
+                      padding: "0 10px",
+                      fontSize: 12,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      opacity: historyPage === totalHistoryPages ? 0.5 : 1,
+                    }}
+                  >
+                    <span>Berikutnya</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -4084,339 +4460,107 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
         .btn-history-trigger:hover {
           background: #f1f5f9;
           border-color: #94a3b8;
-        .history-stat-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
         }
-        .history-stat-card {
-          background: #ffffff;
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 8px;
-          padding: 16px 18px;
+
+        .kp-tablist-nav {
           display: flex;
           align-items: center;
-          gap: 14px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          gap: 6px;
+          border-bottom: 1px solid var(--border, #e2e8f0);
+          margin-bottom: 24px;
         }
-        .hstat-icon-wrap {
-          width: 44px;
-          height: 44px;
-          border-radius: 8px;
+
+        .select-custom-wrap {
+          position: relative;
+          width: 100%;
+        }
+        .select-custom-wrap select {
+          width: 100%;
+          height: 38px;
+          border: 1px solid var(--border-strong, #cbd5e1);
+          border-radius: var(--radius-sm, 4px);
+          padding: 0 38px 0 12px;
+          font-size: 13.5px;
+          font-weight: 500;
+          font-family: inherit;
+          background-color: var(--card, #ffffff);
+          color: var(--text, #0f172a);
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .select-custom-wrap select.is-placeholder {
+          color: var(--text-muted, #94a3b8);
+          font-weight: 400;
+        }
+        .select-custom-wrap select:focus {
+          border-color: var(--red, #991b1b);
+          box-shadow: 0 0 0 3px var(--red-bg, rgba(239, 68, 68, 0.1));
+        }
+        .select-custom-arrow {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-muted, #94a3b8);
+          pointer-events: none;
           display: flex;
           align-items: center;
           justify-content: center;
-          flex-shrink: 0;
         }
-        .icon-total {
-          background: rgba(59, 130, 246, 0.1);
-          color: #2563eb;
+
+        .filters-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr auto;
+          gap: 12px;
+          align-items: flex-end;
         }
-        .icon-final {
-          background: rgba(16, 185, 129, 0.1);
-          color: #059669;
-        }
-        .icon-draft {
-          background: rgba(245, 158, 11, 0.1);
-          color: #d97706;
-        }
-        .icon-active {
-          background: rgba(143, 26, 37, 0.1);
-          color: var(--red-dark, #8f1a25);
-        }
-        .hstat-content {
-          display: flex;
-          flex-direction: column;
+        .filters-grid > div {
           min-width: 0;
         }
-        .hstat-label {
-          font-size: 11.5px;
-          font-weight: 600;
-          color: var(--text-muted, #64748b);
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
+
+        .rp-desktop-table {
+          display: block;
         }
-        .hstat-value {
-          font-size: 18px;
-          font-weight: 800;
-          color: var(--text, #0f172a);
-          margin-top: 2px;
-          line-height: 1.2;
+        .rp-tablet-cards {
+          display: none;
         }
-        .text-ellipsis {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+
+        @media (max-width: 1023px) and (min-width: 768px) {
+          .filters-grid {
+            grid-template-columns: 1.3fr 1fr 1fr auto;
+            gap: 10px;
+          }
         }
-        .history-filter-card {
-          background: #ffffff;
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 8px;
-          padding: 14px 18px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+        @media (max-width: 767px) {
+          .filters-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .filter-col-search {
+            grid-column: span 2;
+          }
+          .filter-col-actions {
+            grid-column: span 2;
+            display: flex;
+            justify-content: flex-end;
+          }
+          .rp-desktop-table {
+            display: none !important;
+          }
+          .rp-tablet-cards {
+            display: flex !important;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+          }
         }
-        .history-filter-row {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 12px;
-        }
-        .history-search-wrap {
-          position: relative;
-          flex: 1;
-          min-width: 240px;
-        }
-        .history-search-icon {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          pointer-events: none;
-        }
-        .history-filter-search {
-          width: 100%;
-          height: 38px;
-          padding: 0 34px 0 36px;
-          border: 1px solid var(--border-strong, #cbd5e1);
-          border-radius: 6px;
-          font-size: 13px;
-          outline: none;
-          color: #0f172a;
-          background: #ffffff;
-          transition: border-color 150ms ease, box-shadow 150ms ease;
-        }
-        .history-filter-search:focus {
-          border-color: var(--red-dark, #8f1a25);
-          box-shadow: 0 0 0 2px rgba(143, 26, 37, 0.1);
-        }
-        .history-search-clear {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: #94a3b8;
-          cursor: pointer;
-          padding: 4px;
-          display: flex;
-          align-items: center;
-        }
-        .history-search-clear:hover {
-          color: #475569;
-        }
-        .history-filter-select-wrap {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .history-filter-label {
-          font-size: 12.5px;
-          font-weight: 600;
-          color: var(--text-muted, #64748b);
-          white-space: nowrap;
-        }
-        .history-filter-select {
-          height: 38px;
-          padding: 0 10px;
-          border: 1px solid var(--border-strong, #cbd5e1);
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-          color: #0f172a;
-          background: #ffffff;
-          outline: none;
-        }
-        .history-filter-select:focus {
-          border-color: var(--red-dark, #8f1a25);
-        }
-        .history-btn-reset {
-          height: 38px;
-          padding: 0 14px;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-        }
-        .history-btn-create {
-          height: 38px;
-          padding: 0 16px;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          margin-left: auto;
-        }
-        .history-table-card {
-          background: #ffffff;
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-        }
-        .history-table-wrapper {
-          overflow-x: auto;
-        }
-        .history-dedicated-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-        .history-dedicated-table thead th {
-          background: #f8fafc;
-          padding: 12px 16px;
-          text-align: left;
-          font-size: 11.5px;
-          font-weight: 700;
-          color: #475569;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          border-bottom: 1px solid #e2e8f0;
-          white-space: nowrap;
-        }
-        .history-dedicated-table tbody tr {
-          border-bottom: 1px solid #f1f5f9;
-          transition: background-color 120ms ease;
-        }
-        .history-dedicated-table tbody tr:hover {
-          background: #f8fafc;
-        }
-        .history-dedicated-table tbody tr.row-current {
-          background: rgba(143, 26, 37, 0.035);
-        }
-        .history-dedicated-table tbody tr.row-current td:first-child {
-          border-left: 3px solid var(--red-dark, #8f1a25);
-        }
-        .history-dedicated-table tbody td {
-          padding: 13px 16px;
-          vertical-align: middle;
-        }
-        .history-cell-name {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .history-period-name {
-          font-weight: 700;
-          font-size: 13.5px;
-          color: #0f172a;
-        }
-        .history-date-range {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          color: #334155;
-          font-weight: 500;
-          font-size: 12.5px;
-          white-space: nowrap;
-        }
-        .history-target-month {
-          font-weight: 600;
-          color: #0f172a;
-          font-size: 13px;
-          white-space: nowrap;
-        }
-        .history-cell-notes {
-          font-size: 12.5px;
-          color: #64748b;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .history-table-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 12px;
-          padding: 12px 18px;
-          border-top: 1px solid #e2e8f0;
-          background: #ffffff;
-        }
-        .history-table-info {
-          font-size: 12.5px;
-          color: #64748b;
-        }
-        .history-pagination-btns {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .btn-page-nav {
-          height: 32px;
-          padding: 0 12px;
-          border: 1px solid #cbd5e1;
-          background: #ffffff;
-          border-radius: 5px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #475569;
-          cursor: pointer;
-          transition: all 120ms ease;
-        }
-        .btn-page-nav:hover:not(:disabled) {
-          background: #f1f5f9;
-          border-color: #94a3b8;
-          color: #0f172a;
-        }
-        .btn-page-nav:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
-        }
-        .history-page-numbers {
-          display: flex;
-          gap: 4px;
-        }
-        .btn-page-number {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
-          border-radius: 5px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #475569;
-          cursor: pointer;
-          transition: all 120ms ease;
-        }
-        .btn-page-number:hover:not(.active) {
-          background: #f1f5f9;
-          border-color: #cbd5e1;
-          color: #0f172a;
-        }
-        .btn-page-number.active {
-          background: var(--red-dark, #8f1a25);
-          color: #ffffff;
-          border-color: var(--red-dark, #8f1a25);
-        }
-        .history-empty-state {
-          padding: 48px 24px;
-          text-align: center;
-          color: #64748b;
-        }
-        .history-empty-icon {
-          color: #cbd5e1;
-          margin: 0 auto 12px;
-        }
-        .history-empty-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0 0 6px;
-        }
-        .history-empty-desc {
-          font-size: 13px;
-          margin: 0 auto 16px;
-          max-width: 480px;
-          line-height: 1.5;
-        }
-      `}</style>
+`}</style>
     </div>
   );
 }
