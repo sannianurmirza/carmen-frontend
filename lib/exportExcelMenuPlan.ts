@@ -99,7 +99,7 @@ export async function generateMenuPlanExcelBuffer(
   workbook.created = new Date();
   workbook.modified = new Date();
 
-  const cateringName = plan.catering_nama || "Katering";
+  const cateringName = plan.catering_nama || "Semua Katering (PT JAI)";
   const year = plan.effective_year || new Date().getFullYear();
   const month = plan.effective_month || new Date().getMonth() + 1;
   const periodLabel = plan.effective_menu_period || `${year}-${String(month).padStart(2, "0")}`;

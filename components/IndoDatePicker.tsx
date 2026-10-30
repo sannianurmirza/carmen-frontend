@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -23,6 +24,7 @@ export interface IndoDatePickerProps {
   id?: string;
   name?: string;
   align?: "left" | "right";
+  placement?: "auto" | "top" | "bottom";
   isError?: boolean;
   displayFormat?: "compact" | "medium" | "full" | "iso"; // "compact": 30/10/2026, "medium": 30 Okt 2026, "full": Jumat, 30 Okt 2026, "iso": 2026-10-30
 }
@@ -126,11 +128,105 @@ export default function IndoDatePicker({
   id,
   name,
   align = "left",
+  placement = "auto",
   isError = false,
   displayFormat = "medium",
 }: IndoDatePickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const [coords, setCoords] = useState<{
+    top: number | null;
+    bottom: number | null;
+    left: number;
+    openUpward: boolean;
+    maxHeight: number;
+  }>({
+    top: null,
+    bottom: null,
+    left: 0,
+    openUpward: false,
+    maxHeight: 380,
+  });
+
+  // Calculate dynamic position (flips upward if not enough space below or inside modal)
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+
+    // If trigger element is completely scrolled out of viewport, close it
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      setIsOpen(false);
+      return;
+    }
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const POPOVER_HEIGHT = 350;
+    const POPOVER_WIDTH = 290;
+
+    let openUpward = false;
+    if (placement === "top") {
+      openUpward = true;
+    } else if (placement === "bottom") {
+      openUpward = false;
+    } else {
+      // "auto": if space below is less than 350px AND space above is greater than space below, flip UPWARD!
+      if (spaceBelow < POPOVER_HEIGHT && spaceAbove > spaceBelow) {
+        openUpward = true;
+      }
+    }
+
+    let left = align === "right" ? rect.right - POPOVER_WIDTH : rect.left;
+
+    // Ensure it doesn't overflow viewport horizontally
+    if (left + POPOVER_WIDTH > window.innerWidth - 10) {
+      left = Math.max(10, window.innerWidth - POPOVER_WIDTH - 10);
+    }
+    if (left < 10) {
+      left = 10;
+    }
+
+    if (openUpward) {
+      setCoords({
+        top: null,
+        bottom: Math.max(10, window.innerHeight - rect.top + 6),
+        left,
+        openUpward: true,
+        maxHeight: Math.max(260, Math.min(spaceAbove - 16, 420)),
+      });
+    } else {
+      setCoords({
+        top: rect.bottom + 6,
+        bottom: null,
+        left,
+        openUpward: false,
+        maxHeight: Math.max(260, Math.min(spaceBelow - 16, 420)),
+      });
+    }
+  }, [align, placement]);
+
+  // Recalculate position on scroll (including modal scrolls) and resize
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+
+    // Capture = true catches scrolling in nested scrollable elements like modal dialogs or tables
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, updatePosition]);
 
   // Parse current value
   const parsedValue = useMemo(() => parseYMD(value), [value]);
@@ -148,30 +244,32 @@ export default function IndoDatePicker({
     }
   }, [parsedValue?.year, parsedValue?.month]);
 
-  // Close calendar when clicking outside
+  // Close calendar when clicking outside (checks both trigger and popover portal)
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
 
-  // Handle escape key
-  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
       }
     }
-    window.addEventListener("keydown", handleKeyDown);
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      window.addEventListener("keydown", handleKeyDown);
+    }
     return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
@@ -369,14 +467,23 @@ export default function IndoDatePicker({
 
       {/* Visible Interactive Input Trigger */}
       <div
+        ref={triggerRef}
         role="button"
         tabIndex={disabled ? -1 : 0}
         onClick={() => {
-          if (!disabled) setIsOpen((prev) => !prev);
+          if (!disabled) {
+            if (!isOpen) {
+              updatePosition();
+            }
+            setIsOpen((prev) => !prev);
+          }
         }}
         onKeyDown={(e) => {
           if (!disabled && (e.key === "Enter" || e.key === " ")) {
             e.preventDefault();
+            if (!isOpen) {
+              updatePosition();
+            }
             setIsOpen((prev) => !prev);
           }
         }}
@@ -463,20 +570,26 @@ export default function IndoDatePicker({
         </div>
       </div>
 
-      {/* Floating Indonesian Calendar Popover */}
-      {isOpen && (
+      {/* Floating Indonesian Calendar Popover (Rendered in Portal to prevent clipping from parent overflow/modals and auto-flip upward) */}
+      {isOpen && mounted && typeof document !== "undefined" && createPortal(
         <div
+          ref={popoverRef}
           style={{
-            position: "absolute",
-            top: "calc(100% + 5px)",
-            [align === "right" ? "right" : "left"]: 0,
-            zIndex: 9999,
+            position: "fixed",
+            top: coords.top !== null ? `${coords.top}px` : "auto",
+            bottom: coords.bottom !== null ? `${coords.bottom}px` : "auto",
+            left: `${coords.left}px`,
+            zIndex: 99999,
             width: 290,
             backgroundColor: "#ffffff",
             borderRadius: 10,
-            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.08)",
+            boxShadow:
+              "0 14px 35px -4px rgba(0, 0, 0, 0.22), 0 8px 12px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.1)",
             padding: 12,
             fontFamily: "inherit",
+            maxHeight: `${coords.maxHeight}px`,
+            overflowY: "auto",
+            boxSizing: "border-box",
             animation: "fadeIn 0.15s ease",
           }}
         >
@@ -768,7 +881,8 @@ export default function IndoDatePicker({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

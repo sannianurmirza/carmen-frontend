@@ -81,7 +81,7 @@ export default function RencanaMenuPage() {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Form Fields for Create
-  const [selectedCateringId, setSelectedCateringId] = useState<number | "">("");
+  const [selectedCateringId, setSelectedCateringId] = useState<number | "all">("all");
   const [effectiveYear, setEffectiveYear] = useState<number>(2026);
   const [effectiveMonth, setEffectiveMonth] = useState<number>(() => {
     const today = new Date();
@@ -116,9 +116,7 @@ export default function RencanaMenuPage() {
         if (isMounted) {
           const activeOnly = data.filter((c) => c.is_active !== false);
           setCaterings(activeOnly);
-          if (activeOnly.length > 0 && selectedCateringId === "") {
-            setSelectedCateringId(activeOnly[0].id);
-          }
+          // default is "all" (Semua Katering)
         }
       } catch (err) {
         console.error("Gagal memuat katering:", err);
@@ -155,7 +153,7 @@ export default function RencanaMenuPage() {
 
   // Map catering metadata
   const cateringMap = useMemo(() => {
-    const map = new Map<number, Catering>();
+    const map = new Map<number | null | undefined, Catering>();
     caterings.forEach((c) => map.set(c.id, c));
     return map;
   }, [caterings]);
@@ -194,7 +192,7 @@ export default function RencanaMenuPage() {
     setSubmitting(true);
     try {
       const payload: MenuPlanCreatePayload = {
-        catering_id: Number(selectedCateringId),
+        catering_id: selectedCateringId === "all" ? undefined : Number(selectedCateringId),
         submission_period: submissionPeriodLabel,
         effective_menu_period: effectivePeriodLabel,
         effective_year: Number(effectiveYear),
@@ -956,7 +954,7 @@ export default function RencanaMenuPage() {
                     month: "short",
                     year: "numeric",
                   });
-                  const cateringInfo = cateringMap.get(p.catering_id);
+                  const cateringInfo = p.catering_id ? cateringMap.get(p.catering_id) : undefined;
 
                   return (
                     <tr
@@ -1302,22 +1300,21 @@ export default function RencanaMenuPage() {
                   <select
                     id="modal-catering-select"
                     value={selectedCateringId}
-                    onChange={(e) => setSelectedCateringId(Number(e.target.value))}
-                    required
+                    onChange={(e) => setSelectedCateringId(e.target.value === "all" ? "all" : Number(e.target.value))}
                     className="select-input"
                     style={{ width: "100%", height: 42, fontSize: 13 }}
                   >
-                    <option value="" disabled>
-                      -- Pilih Vendor Katering --
+                    <option value="all">
+                      ⭐ Semua Katering (Semua Vendor PT JAI) — Berlaku untuk Semua
                     </option>
                     {caterings.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nama} {c.reward_punishment_group ? `(Grup ${c.reward_punishment_group})` : ""}
+                        Khusus {c.nama} {c.reward_punishment_group ? `(Grup ${c.reward_punishment_group})` : ""}
                       </option>
                     ))}
                   </select>
                   <p style={{ margin: "4px 0 0 0", fontSize: 11, color: "var(--text-secondary)" }}>
-                    Menu bersifat spesifik per katering (Akbar dan Alvia independen).
+                    1 laporan perencanaan menu bulanan berlaku serentak untuk seluruh vendor katering di PT JAI.
                   </p>
                 </div>
 

@@ -326,7 +326,9 @@ export default function KebersihanKantinPage() {
   const shiftRecordsMap = useMemo(() => {
     const map = new Map<number, KebersihanDailyAssessment>();
     for (const r of dailyShiftRecords) {
-      map.set(r.catering_id, r);
+      if (r.catering_id !== null && r.catering_id !== undefined) {
+        map.set(r.catering_id, r);
+      }
     }
     return map;
   }, [dailyShiftRecords]);

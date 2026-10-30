@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
+  Moon,
+  Sun,
+  RotateCcw,
+  Utensils,
   ArrowLeft,
   Save,
   Copy,
@@ -77,6 +81,13 @@ export default function RencanaMenuEditorPage() {
   const [sourceCopyDate, setSourceCopyDate] = useState("");
   const [targetCopyDate, setTargetCopyDate] = useState("");
 
+  // Different Night Menu Tool State
+  const [isDiffNightModalOpen, setIsDiffNightModalOpen] = useState(false);
+  const [diffModalDate, setDiffModalDate] = useState<string>("");
+  const [diffModalNightItems, setDiffModalNightItems] = useState<Record<number, string>>({
+    1: "", 2: "", 3: "", 4: "", 5: "", 6: ""
+  });
+
   const role = user?.role?.toLowerCase() || "";
   const isEditable = (plan?.status === "DRAFT" || plan?.status === "REVISION_REQUIRED") && (role === "admin" || role === "staff");
 
@@ -130,6 +141,159 @@ export default function RencanaMenuEditorPage() {
       [key]: value,
     }));
     setHasUnsavedChanges(true);
+  };
+
+  // Check if a day has perishable soup in morning (e.g. sayur bayam or sayur kunci)
+  const isPerishableMorningSayur = useCallback((dateStr: string) => {
+    const sayur = (menuItemsMap[`${dateStr}_Pagi_4`] || "").toLowerCase();
+    return sayur.includes("bayam") || sayur.includes("kunci");
+  }, [menuItemsMap]);
+
+  // Check if a specific date has custom/different night menu compared to morning
+  const isDateNightDiff = useCallback((dateStr: string) => {
+    if (!dateStr) return false;
+    let hasAnyDiff = false;
+    let hasAnyPagi = false;
+    for (let order = 1; order <= 6; order++) {
+      const p = (menuItemsMap[`${dateStr}_Pagi_${order}`] || "").trim();
+      const m = (menuItemsMap[`${dateStr}_Malam_${order}`] || "").trim();
+      if (p) hasAnyPagi = true;
+      if (m && p !== m) hasAnyDiff = true;
+    }
+    return hasAnyPagi && hasAnyDiff;
+  }, [menuItemsMap]);
+
+  // List of dates that have customized different night menus
+  const datesWithNightDiff = useMemo(() => {
+    if (!plan) return [];
+    const list: Array<{ dateStr: string; day: number; sayurPagi: string; sayurMalam: string }> = [];
+    const year = plan.effective_year;
+    const month = plan.effective_month;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      if (isDateNightDiff(dateStr)) {
+        list.push({
+          dateStr,
+          day,
+          sayurPagi: menuItemsMap[`${dateStr}_Pagi_4`] || "(Kosong)",
+          sayurMalam: menuItemsMap[`${dateStr}_Malam_4`] || "(Kosong)",
+        });
+      }
+    }
+    return list;
+  }, [plan, isDateNightDiff, menuItemsMap]);
+
+  // Open modal to configure different night menu for a date
+  const openDifferentNightMenuModal = (targetDate?: string) => {
+    if (!plan) return;
+    const year = plan.effective_year;
+    const month = plan.effective_month;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    let chosenDate = targetDate;
+    if (!chosenDate) {
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        if (isPerishableMorningSayur(dStr) && !isDateNightDiff(dStr)) {
+          chosenDate = dStr;
+          break;
+        }
+      }
+      if (!chosenDate) {
+        chosenDate = `${year}-${String(month).padStart(2, "0")}-01`;
+      }
+    }
+
+    setDiffModalDate(chosenDate);
+    const currentNight: Record<number, string> = {};
+    for (let order = 1; order <= 6; order++) {
+      const malamVal = menuItemsMap[`${chosenDate}_Malam_${order}`];
+      const pagiVal = menuItemsMap[`${chosenDate}_Pagi_${order}`];
+      currentNight[order] = (malamVal !== undefined && malamVal !== "") ? malamVal : (pagiVal || "");
+    }
+    setDiffModalNightItems(currentNight);
+    setIsDiffNightModalOpen(true);
+  };
+
+  const handleDiffDateChange = (newDate: string) => {
+    setDiffModalDate(newDate);
+    const currentNight: Record<number, string> = {};
+    for (let order = 1; order <= 6; order++) {
+      const malamVal = menuItemsMap[`${newDate}_Malam_${order}`];
+      const pagiVal = menuItemsMap[`${newDate}_Pagi_${order}`];
+      currentNight[order] = (malamVal !== undefined && malamVal !== "") ? malamVal : (pagiVal || "");
+    }
+    setDiffModalNightItems(currentNight);
+  };
+
+  const handleSaveDiffNightModal = () => {
+    if (!diffModalDate) return;
+    setMenuItemsMap((prev) => {
+      const next = { ...prev };
+      for (let order = 1; order <= 6; order++) {
+        next[`${diffModalDate}_Malam_${order}`] = diffModalNightItems[order] || "";
+      }
+      return next;
+    });
+    setHasUnsavedChanges(true);
+    setIsDiffNightModalOpen(false);
+    showToast(
+      `Menu shift malam khusus ${diffModalDate} berhasil diterapkan. Klik "Simpan Draf" untuk menyimpan perubahan.`,
+      "success"
+    );
+  };
+
+  const handleResetNightToMatchPagi = () => {
+    if (!diffModalDate) return;
+    const resetNight: Record<number, string> = {};
+    setMenuItemsMap((prev) => {
+      const next = { ...prev };
+      for (let order = 1; order <= 6; order++) {
+        const pagiVal = prev[`${diffModalDate}_Pagi_${order}`] || "";
+        next[`${diffModalDate}_Malam_${order}`] = pagiVal;
+        resetNight[order] = pagiVal;
+      }
+      return next;
+    });
+    setDiffModalNightItems(resetNight);
+    setHasUnsavedChanges(true);
+    showToast(`Menu shift malam tanggal ${diffModalDate} telah disamakan dengan shift pagi.`, "info");
+  };
+
+  const handleCopyMorningToModalNight = () => {
+    if (!diffModalDate) return;
+    const copyNight: Record<number, string> = {};
+    for (let order = 1; order <= 6; order++) {
+      copyNight[order] = menuItemsMap[`${diffModalDate}_Pagi_${order}`] || "";
+    }
+    setDiffModalNightItems(copyNight);
+  };
+
+  // Sync entire night shift from morning shift across all days of the month
+  const handleSyncNightWithMorning = () => {
+    if (!plan || !isEditable) return;
+    if (!window.confirm("Samakan seluruh komponen menu shift malam mengikuti shift pagi untuk seluruh hari di bulan ini? Setelah ini Anda dapat menyesuaikan tanggal-tanggal tertentu (misal sayur bayam/kunci).")) {
+      return;
+    }
+
+    const year = plan.effective_year;
+    const month = plan.effective_month;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    setMenuItemsMap((prev) => {
+      const next = { ...prev };
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        for (let order = 1; order <= 6; order++) {
+          next[`${dateStr}_Malam_${order}`] = prev[`${dateStr}_Pagi_${order}`] || "";
+        }
+      }
+      return next;
+    });
+    setHasUnsavedChanges(true);
+    showToast("Seluruh komponen menu shift malam berhasil disamakan dengan shift pagi.", "success");
   };
 
   // Dynamic Calendar Matrix Computation (4 s/d 6 minggu)
@@ -191,20 +355,45 @@ export default function RencanaMenuEditorPage() {
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-        // Simpan kedua shift (Pagi & Malam)
-        for (const shift of ["Pagi", "Malam"] as const) {
-          for (let order = 1; order <= 6; order++) {
-            const key = `${dateStr}_${shift}_${order}`;
-            const val = menuItemsMap[key]?.trim();
-            if (val) {
-              itemsPayload.push({
-                menu_date: dateStr,
-                shift: shift,
-                item_order: order,
-                item_role: COMPONENT_ROLES[order - 1],
-                menu_name: val,
-              });
-            }
+        // Periksa apakah Shift Malam memiliki komponen yang sengaja diisi
+        let nightHasItems = false;
+        for (let order = 1; order <= 6; order++) {
+          if (menuItemsMap[`${dateStr}_Malam_${order}`]?.trim()) {
+            nightHasItems = true;
+            break;
+          }
+        }
+
+        // Simpan Shift Pagi
+        for (let order = 1; order <= 6; order++) {
+          const key = `${dateStr}_Pagi_${order}`;
+          const val = menuItemsMap[key]?.trim();
+          if (val) {
+            itemsPayload.push({
+              menu_date: dateStr,
+              shift: "Pagi",
+              item_order: order,
+              item_role: COMPONENT_ROLES[order - 1],
+              menu_name: val,
+            });
+          }
+        }
+
+        // Simpan Shift Malam: jika malam ada kustomisasi gunakan malam;
+        // jika malam kosong otomatis gunakan shift pagi agar data lengkap
+        for (let order = 1; order <= 6; order++) {
+          const malamKey = `${dateStr}_Malam_${order}`;
+          const pagiKey = `${dateStr}_Pagi_${order}`;
+          const malamVal = menuItemsMap[malamKey]?.trim();
+          const val = nightHasItems ? malamVal : (malamVal || menuItemsMap[pagiKey]?.trim());
+          if (val) {
+            itemsPayload.push({
+              menu_date: dateStr,
+              shift: "Malam",
+              item_order: order,
+              item_role: COMPONENT_ROLES[order - 1],
+              menu_name: val,
+            });
           }
         }
       }
@@ -517,13 +706,13 @@ export default function RencanaMenuEditorPage() {
             </div>
             <h1 style={{ margin: "2px 0 6px 0", fontSize: "22px", fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>
               <Building2 size={24} className="text-primary" />
-              {plan.catering_nama}
+              {plan.catering_nama || "Semua Katering (PT JAI)"}
               <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)" }}>
                 (Versi {plan.version})
               </span>
             </h1>
             <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
-              Periode Menu Berlaku: <strong style={{ color: "var(--text-primary)" }}>{plan.effective_menu_period}</strong> | Pengajuan: {plan.submission_period}
+              Periode Menu Berlaku: <strong style={{ color: "var(--text-primary)" }}>{plan.effective_menu_period}</strong> | Pengajuan: {plan.submission_period} <span style={{ marginLeft: 8, padding: "2px 8px", borderRadius: 4, background: "rgba(37, 99, 235, 0.1)", color: "#2563eb", fontSize: "11px", fontWeight: 700 }}>1 Laporan untuk Seluruh Vendor Katering</span>
             </p>
           </div>
 
@@ -612,28 +801,120 @@ export default function RencanaMenuEditorPage() {
           </button>
         </div>
 
-        {/* Copy Date Tool */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Shift Malam Tools & Copy Tool */}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           {isEditable && (
-            <button
-              type="button"
-              onClick={() => setIsCopyModalOpen(true)}
-              className="btn btn-outline"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: "13px",
-                padding: "8px 14px",
-                borderRadius: 8,
-              }}
-            >
-              <Copy size={14} />
-              Salin Menu Tanggal Lain
-            </button>
+            <>
+              {/* TOMBOL UTAMA: Berikan Menu Berbeda Shift Malam */}
+              <button
+                type="button"
+                onClick={() => openDifferentNightMenuModal()}
+                className="btn btn-primary"
+                title="Berikan menu berbeda untuk shift malam (misal jika shift pagi ada sayur kunci atau sayur bayam yang tidak tahan lama)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  fontSize: "13px",
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  background: "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)",
+                  borderColor: "#3730a3",
+                  color: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(79, 70, 229, 0.25)",
+                }}
+              >
+                <Moon size={15} />
+                <span>Berikan Menu Berbeda Shift Malam</span>
+              </button>
+
+              {/* TOMBOL PEMBANTU: Samakan Menu Malam dari Pagi */}
+              <button
+                type="button"
+                onClick={handleSyncNightWithMorning}
+                className="btn btn-outline"
+                title="Samakan seluruh komponen menu shift malam mengikuti shift pagi"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: "12.5px",
+                  padding: "8px 13px",
+                  borderRadius: 8,
+                }}
+              >
+                <RotateCcw size={14} />
+                <span>Samakan Menu Malam dari Pagi</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsCopyModalOpen(true)}
+                className="btn btn-outline"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: "12.5px",
+                  padding: "8px 13px",
+                  borderRadius: 8,
+                }}
+              >
+                <Copy size={14} />
+                Salin Tanggal Lain
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Ringkasan Hari dengan Menu Malam Berbeda */}
+      {datesWithNightDiff.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 8,
+            padding: "10px 14px",
+            background: "rgba(99, 102, 241, 0.08)",
+            borderRadius: 8,
+            border: "1px solid rgba(99, 102, 241, 0.25)",
+            marginBottom: 16,
+          }}
+        >
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#4338ca", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <Moon size={14} />
+            Tanggal dengan Menu Malam Berbeda ({datesWithNightDiff.length} hari):
+          </span>
+          {datesWithNightDiff.map((d) => (
+            <button
+              key={d.dateStr}
+              type="button"
+              onClick={() => openDifferentNightMenuModal(d.dateStr)}
+              style={{
+                fontSize: "11px",
+                padding: "3px 8px",
+                borderRadius: 999,
+                background: "#ffffff",
+                border: "1px solid rgba(99, 102, 241, 0.35)",
+                color: "#3730a3",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>Tgl {d.day}</span>
+              <span style={{ color: "#6b7280" }}>• Malam:</span>
+              <span style={{ fontWeight: 700 }}>{d.sayurMalam}</span>
+              <span>✏️</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Dynamic Calendar Grid */}
       <div
@@ -709,7 +990,7 @@ export default function RencanaMenuEditorPage() {
                         gap: 6,
                       }}
                     >
-                      {/* Day Number Header */}
+                      {/* Day Number Header with Night Shift Diff Toggle */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
                         <span
                           style={{
@@ -720,9 +1001,52 @@ export default function RencanaMenuEditorPage() {
                         >
                           Tgl {cell.day}
                         </span>
-                        <span style={{ fontSize: "10.5px", color: "var(--text-muted)" }}>
-                          6 Komponen
-                        </span>
+                        {isEditable ? (
+                          <button
+                            type="button"
+                            onClick={() => openDifferentNightMenuModal(dateStr)}
+                            title={isDateNightDiff(dateStr) ? "Menu Shift Malam BERBEDA dari Shift Pagi (Klik untuk edit)" : "Berikan menu berbeda untuk shift malam pada tanggal ini (misal Sayur Kunci/Bayam)"}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                              fontSize: "10.5px",
+                              fontWeight: 700,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              border: isDateNightDiff(dateStr) ? "1px solid #6366f1" : "1px solid var(--border-color)",
+                              background: isDateNightDiff(dateStr) ? "#eef2ff" : "rgba(0,0,0,0.03)",
+                              color: isDateNightDiff(dateStr) ? "#4338ca" : "var(--text-secondary)",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            <Moon size={11} style={{ color: isDateNightDiff(dateStr) ? "#4f46e5" : "inherit" }} />
+                            <span>{isDateNightDiff(dateStr) ? "Malam Beda" : "+ Beda Malam"}</span>
+                          </button>
+                        ) : isDateNightDiff(dateStr) ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              padding: "1px 5px",
+                              borderRadius: 4,
+                              background: "#eef2ff",
+                              color: "#4338ca",
+                              border: "1px solid #c7d2fe",
+                            }}
+                          >
+                            <Moon size={10} />
+                            Malam Beda
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "10.5px", color: "var(--text-muted)" }}>
+                            6 Komponen
+                          </span>
+                        )}
                       </div>
 
                       {/* 6 Component Item Inputs */}
@@ -755,6 +1079,28 @@ export default function RencanaMenuEditorPage() {
                                 }}
                                 className="input-cell"
                               />
+                              {order === 4 && isPerishableMorningSayur(dateStr) && !isDateNightDiff(dateStr) && (
+                                <div
+                                  onClick={() => isEditable && openDifferentNightMenuModal(dateStr)}
+                                  style={{
+                                    fontSize: "10px",
+                                    fontWeight: 600,
+                                    color: "#b45309",
+                                    background: "#fef3c7",
+                                    padding: "2px 5px",
+                                    borderRadius: 4,
+                                    marginTop: 2,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 3,
+                                    cursor: isEditable ? "pointer" : "default",
+                                    lineHeight: 1.2,
+                                  }}
+                                  title="Sayur bayam/kunci tidak tahan lama untuk shift malam. Klik tombol '+ Beda Malam' untuk memberikan menu berbeda."
+                                >
+                                  <span>⚠️ Bayam/Kunci: Klik 'Beda Malam'</span>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1019,6 +1365,324 @@ export default function RencanaMenuEditorPage() {
                       Ya, Ajukan Sekarang
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Berikan Menu Berbeda Shift Malam */}
+      {isDiffNightModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(2px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 16,
+          }}
+        >
+          <div
+            className="card-surface"
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              borderRadius: 14,
+              border: "1px solid var(--border-color)",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+              background: "var(--card-bg, #ffffff)",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--border-color)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)",
+                color: "#ffffff",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(255, 255, 255, 0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Moon size={20} style={{ color: "#fbbf24" }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#ffffff" }}>
+                    Berikan Menu Berbeda untuk Shift Malam
+                  </h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.75)" }}>
+                    Khusus tanggal yang memiliki hidangan tidak tahan lama (misal Sayur Kunci atau Sayur Bayam)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDiffNightModalOpen(false)}
+                className="btn-icon"
+                style={{ color: "#ffffff", borderRadius: 6 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Alert Info Box */}
+              <div
+                style={{
+                  background: "rgba(245, 158, 11, 0.1)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  borderRadius: 8,
+                  padding: "10px 14px",
+                  fontSize: "12.5px",
+                  lineHeight: 1.5,
+                  color: "#92400e",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                }}
+              >
+                <AlertCircle size={18} style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <strong>Pedoman Katering PT JAI:</strong> Pada dasarnya menu shift pagi dan shift malam adalah <strong>sama untuk seluruh katering</strong>. Namun hidangan sayur berkuah tertentu seperti <strong>Sayur Kunci</strong> atau <strong>Sayur Bayam</strong> berisiko rusak / basi jika dibiarkan hingga malam. Gunakan form ini untuk mengganti hidangan shift malam pada tanggal tersebut (misal menjadi Sayur Sop, Sayur Asem, atau Sayur Lodeh).
+                </div>
+              </div>
+
+              {/* Tanggal Picker / Selector */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, padding: "12px 14px", background: "var(--content-bg, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Calendar size={16} className="text-primary" />
+                  <label htmlFor="diff-date-select" style={{ fontSize: "13px", fontWeight: 700, margin: 0 }}>
+                    Pilih Tanggal Berlaku:
+                  </label>
+                </div>
+                <select
+                  id="diff-date-select"
+                  value={diffModalDate}
+                  onChange={(e) => handleDiffDateChange(e.target.value)}
+                  className="select-input"
+                  style={{ minWidth: 260, height: 38, fontSize: "13px", fontWeight: 600 }}
+                >
+                  {calendarWeeks.flat().filter(c => c.isCurrentMonth).map(c => {
+                    const dStr = c.dateStr;
+                    const sayurPagi = menuItemsMap[`${dStr}_Pagi_4`] || "";
+                    const isDiff = isDateNightDiff(dStr);
+                    const isPerishable = isPerishableMorningSayur(dStr);
+                    return (
+                      <option key={dStr} value={dStr}>
+                        Tgl {c.day} {sayurPagi ? `(${sayurPagi})` : ""}{isDiff ? " [🌙 Malam Beda]" : isPerishable ? " [⚠️ Perlu Beda]" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Side-by-Side: Pagi vs Malam */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {/* Kolom Kiri: SHIFT PAGI (Referensi) */}
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border-color)",
+                    background: "rgba(248, 250, 252, 0.8)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid var(--border-color)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Sun size={16} style={{ color: "#d97706" }} />
+                      <strong style={{ fontSize: "13px", color: "var(--text-primary)" }}>SHIFT PAGI (Referensi)</strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyMorningToModalNight}
+                      className="btn btn-ghost"
+                      style={{ fontSize: "11px", padding: "2px 6px" }}
+                      title="Salin seluruh menu pagi ke kolom malam di sebelah kanan"
+                    >
+                      <Copy size={12} />
+                      Salin ke Malam
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[1, 2, 3, 4, 5, 6].map((order) => {
+                      const val = menuItemsMap[`${diffModalDate}_Pagi_${order}`] || "";
+                      const label = COMPONENT_ROLES[order - 1];
+                      const isBayamKunci = order === 4 && (val.toLowerCase().includes("bayam") || val.toLowerCase().includes("kunci"));
+
+                      return (
+                        <div key={order}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-muted)", marginBottom: 2 }}>
+                            <span>{order}. {label}</span>
+                            {isBayamKunci && (
+                              <span style={{ color: "#d97706", fontWeight: 700, fontSize: "10px" }}>
+                                ⚠️ Tidak tahan lama
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              padding: "6px 9px",
+                              borderRadius: 5,
+                              border: isBayamKunci ? "1px solid #f59e0b" : "1px solid var(--border-color)",
+                              background: isBayamKunci ? "#fffbeb" : "#ffffff",
+                              fontSize: "12px",
+                              color: val ? "var(--text-primary)" : "var(--text-muted)",
+                              fontWeight: isBayamKunci ? 700 : 500,
+                            }}
+                          >
+                            {val || "(Belum diisi)"}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Kolom Kanan: SHIFT MALAM (Kustomisasi Berbeda) */}
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: 8,
+                    border: "2px solid #6366f1",
+                    background: "#ffffff",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid var(--border-color)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Moon size={16} style={{ color: "#4f46e5" }} />
+                      <strong style={{ fontSize: "13px", color: "#4338ca" }}>SHIFT MALAM (Menu Khusus)</strong>
+                    </div>
+                    <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#4f46e5", background: "#eef2ff", padding: "2px 6px", borderRadius: 4 }}>
+                      Dapat Diedit
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[1, 2, 3, 4, 5, 6].map((order) => {
+                      const val = diffModalNightItems[order] || "";
+                      const label = COMPONENT_ROLES[order - 1];
+                      const pagiVal = menuItemsMap[`${diffModalDate}_Pagi_${order}`] || "";
+                      const isDiffFromPagi = val && pagiVal && val.trim() !== pagiVal.trim();
+
+                      return (
+                        <div key={order}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-muted)", marginBottom: 2 }}>
+                            <span>{order}. {label}</span>
+                            {isDiffFromPagi && (
+                              <span style={{ color: "#4f46e5", fontWeight: 700, fontSize: "10px" }}>
+                                ✨ Berbeda dari Pagi
+                              </span>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={val}
+                            onChange={(e) => setDiffModalNightItems(prev => ({ ...prev, [order]: e.target.value }))}
+                            placeholder={`${order}. ${label}`}
+                            style={{
+                              width: "100%",
+                              fontSize: "12px",
+                              padding: "6px 9px",
+                              borderRadius: 5,
+                              border: order === 4 ? "1.5px solid #6366f1" : "1px solid var(--border-color)",
+                              outline: "none",
+                              background: "#ffffff",
+                              fontWeight: order === 4 ? 600 : 400,
+                            }}
+                          />
+                          {/* Quick suggestions for Sayur / Kuah (order 4) */}
+                          {order === 4 && (
+                            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                              <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>Saran:</span>
+                              {["Sayur Sop Ayam", "Sayur Asem", "Sayur Lodeh", "Sayur Bening Labu Siam", "Soto Ayam"].map(sug => (
+                                <button
+                                  key={sug}
+                                  type="button"
+                                  onClick={() => setDiffModalNightItems(prev => ({ ...prev, 4: sug }))}
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    border: "1px solid #c7d2fe",
+                                    background: "#f5f3ff",
+                                    color: "#4338ca",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  + {sug}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "14px 20px",
+                borderTop: "1px solid var(--border-color)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "var(--content-bg, #f8fafc)",
+              }}
+            >
+              <div>
+                {isDateNightDiff(diffModalDate) && (
+                  <button
+                    type="button"
+                    onClick={handleResetNightToMatchPagi}
+                    className="btn btn-outline"
+                    style={{ fontSize: "12px", color: "#ef4444", borderColor: "#fca5a5" }}
+                  >
+                    <RotateCcw size={13} />
+                    Reset Sama dengan Shift Pagi
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsDiffNightModalOpen(false)}
+                  className="btn btn-ghost"
+                  style={{ fontSize: "13px", padding: "6px 14px" }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDiffNightModal}
+                  className="btn btn-primary"
+                  style={{
+                    fontSize: "13px",
+                    padding: "8px 18px",
+                    borderRadius: 6,
+                    fontWeight: 700,
+                    background: "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)",
+                    borderColor: "#3730a3",
+                  }}
+                >
+                  Terapkan Menu Malam Tanggal Ini
                 </button>
               </div>
             </div>

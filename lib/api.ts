@@ -4248,7 +4248,7 @@ export interface MenuItemResponse extends MenuItemPayload {
 
 export interface MonthlyMenuPlanSummary {
   id: number;
-  catering_id: number;
+  catering_id: number | null;
   catering_nama?: string | null;
   submission_period: string;
   effective_menu_period: string;
@@ -4272,7 +4272,7 @@ export interface MonthlyMenuPlanDetail extends MonthlyMenuPlanSummary {
 }
 
 export interface MenuPlanCreatePayload {
-  catering_id: number;
+  catering_id?: number | null;
   submission_period: string;
   effective_menu_period: string;
   effective_year: number;
