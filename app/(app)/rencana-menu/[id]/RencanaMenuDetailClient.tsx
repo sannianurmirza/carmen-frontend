@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   Moon,
@@ -56,7 +56,9 @@ const COMPONENT_ROLES = [
 export default function RencanaMenuEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const planId = Number(params?.id);
+  const searchParams = useSearchParams();
+  const rawId = (params?.id as string) || (searchParams?.get("id") ?? undefined);
+  const planId = rawId ? Number(rawId) : 0;
 
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -107,7 +109,10 @@ export default function RencanaMenuEditorPage() {
 
   // Load Menu Plan Detail
   const loadPlanDetail = useCallback(async () => {
-    if (!planId || isNaN(planId)) return;
+    if (!planId || isNaN(planId)) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await getMenuPlanDetailApi(planId);

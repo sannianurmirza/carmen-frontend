@@ -1280,7 +1280,7 @@ export default function RencanaMenuRiwayatPage() {
 
                           {/* Tombol Lihat / Edit */}
                           <Link
-                            href={`/rencana-menu/${p.id}`}
+                            href={`/rencana-menu/detail?id=${p.id}`}
                             className={isEditable ? "btn btn-solid" : "btn btn-outline"}
                             style={{
                               height: 30,
