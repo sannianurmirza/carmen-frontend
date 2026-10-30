@@ -311,67 +311,79 @@ export async function generateMenuPlanExcelBuffer(
     }
   }
 
-  // Sheet 3: ESign
+  // Sheet 3: ESign (Standardized 3-Column Enterprise Format: Approved | Checked 2 | Checked 1)
   const wsSign = workbook.addWorksheet("ESign", {
     views: [{ showGridLines: true }],
     pageSetup: {
       orientation: "portrait",
       fitToPage: true,
-      paperSize: 9,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      paperSize: 9, // A4
     },
   });
 
+  const blackThinBorder: Partial<ExcelJS.Borders> = {
+    top: { style: "thin", color: { argb: "FF000000" } },
+    left: { style: "thin", color: { argb: "FF000000" } },
+    bottom: { style: "thin", color: { argb: "FF000000" } },
+    right: { style: "thin", color: { argb: "FF000000" } },
+  };
+
   wsSign.columns = [
-    { width: 4 },  // A - Margin
-    { width: 24 }, // B - Approved
-    { width: 24 }, // C - Checked 2
-    { width: 24 }, // D - Checked 1
-    { width: 4 },  // E - Margin
+    { width: 3 },  // A (Margin)
+    { width: 19 }, // B (Approved)
+    { width: 19 }, // C (Checked 2)
+    { width: 19 }, // D (Checked 1)
   ];
 
-  wsSign.getCell("B1").value = "PT. JATIM AUTOCOMP INDONESIA";
-  wsSign.getCell("B1").font = { name: "Calibri", size: 14, bold: true, color: { argb: "FF1F4E79" } };
-
-  wsSign.getCell("B2").value = `LEMBAR PENGESAHAN RENCANA MENU — ${cateringName.toUpperCase()}`;
-  wsSign.getCell("B2").font = { name: "Calibri", size: 11.5, bold: true, color: { argb: "FF0F172A" } };
-
-  wsSign.getCell("B3").value = `Periode: ${periodLabel}   |   Versi: v${version}   |   Status: ${status}`;
-  wsSign.getCell("B3").font = { name: "Calibri", size: 10, color: { argb: "FF64748B" } };
-
-  wsSign.getRow(4).height = 26;
-  const headers = [
-    { col: "B", label: "Approved (Manager)" },
-    { col: "C", label: "Checked 2 (Supervisor)" },
-    { col: "D", label: "Checked 1 (Staff PIC)" },
-  ];
-
-  headers.forEach((h) => {
-    const c = wsSign.getCell(`${h.col}4`);
-    c.value = h.label;
-    c.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E79" } };
-    c.alignment = { horizontal: "center", vertical: "middle" };
-    c.border = thinBorder;
-  });
-
-  // Merged Rows 5..8 for signature/stamp
-  ["B", "C", "D"].forEach((col) => {
-    wsSign.mergeCells(`${col}5:${col}8`);
-    const c = wsSign.getCell(`${col}5`);
-    c.value = status === "ACTIVE" || status === "APPROVED" ? "[ DIGITAL SIGNATURE - APPROVED ]" : "[ DRAFT / DALAM PROSES ]";
-    c.font = { name: "Calibri", size: 9, bold: true, color: { argb: status === "ACTIVE" || status === "APPROVED" ? "FF16A34A" : "FF94A3B8" } };
-    c.alignment = { horizontal: "center", vertical: "middle" };
-    c.border = thinBorder;
-  });
-
-  // Row 9: Footer info
+  wsSign.getRow(1).height = 15;
+  wsSign.getRow(2).height = 15;
+  wsSign.getRow(3).height = 15;
+  wsSign.getRow(4).height = 24;
+  for (let r = 5; r <= 8; r++) {
+    wsSign.getRow(r).height = 20;
+  }
   wsSign.getRow(9).height = 20;
-  ["B", "C", "D"].forEach((col) => {
-    const c = wsSign.getCell(`${col}9`);
-    c.value = status === "ACTIVE" || status === "APPROVED" ? "Disetujui" : "Menunggu";
-    c.font = { name: "Calibri", size: 9.5, bold: true, color: { argb: "FF334155" } };
+
+  // Header Table: Approved | Checked 2 | Checked 1
+  wsSign.getCell("B4").value = "Approved";
+  wsSign.getCell("C4").value = "Checked 2";
+  wsSign.getCell("D4").value = "Checked 1";
+
+  ["B4", "C4", "D4"].forEach((cellRef) => {
+    const c = wsSign.getCell(cellRef);
+    c.font = { name: "Calibri", size: 11, bold: false, color: { argb: "FF000000" } };
     c.alignment = { horizontal: "center", vertical: "middle" };
-    c.border = thinBorder;
+    c.border = blackThinBorder;
+  });
+
+  // Merged boxes for signature (Rows 5-8)
+  wsSign.mergeCells("B5:B8");
+  wsSign.mergeCells("C5:C8");
+  wsSign.mergeCells("D5:D8");
+
+  for (let r = 5; r <= 8; r++) {
+    for (const col of ["B", "C", "D"]) {
+      wsSign.getCell(`${col}${r}`).border = blackThinBorder;
+    }
+  }
+
+  // Row 9: Approver Initial / blank before approval
+  const isApproved = status === "ACTIVE" || status === "APPROVED";
+  const bottomVals: Record<string, string> = {
+    B: isApproved ? "" : "",
+    C: isApproved ? "CAN" : "",
+    D: isApproved ? "NIA" : "",
+  };
+
+  ["B9", "C9", "D9"].forEach((cellRef) => {
+    const col = cellRef[0];
+    const c = wsSign.getCell(cellRef);
+    c.value = bottomVals[col] || "";
+    c.font = { name: "Calibri", size: 10, bold: false, color: { argb: "FF000000" } };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    c.border = blackThinBorder;
   });
 
   return await workbook.xlsx.writeBuffer();

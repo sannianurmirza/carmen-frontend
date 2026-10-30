@@ -1317,9 +1317,9 @@ export default function RencanaMenuEditorPage() {
                   Alur Persetujuan Resmi 3 Tahap PT JAI:
                 </div>
                 <div style={{ paddingLeft: 22, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  1. Tahap 1: <strong>Checked 1</strong> (Staff Catering)<br />
-                  2. Tahap 2: <strong>Checked 2</strong> (Supervisor GA / IR)<br />
-                  3. Tahap 3: <strong>Approved</strong> (Manager / Dept Head)
+                  1. Tahap 1: <strong>Checked 1</strong><br />
+                  2. Tahap 2: <strong>Checked 2</strong><br />
+                  3. Tahap 3: <strong>Approved</strong>
                 </div>
                 <div style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: 4 }}>
                   * File Excel resmi dengan sheet E-Sign 3 kolom akan digenerate otomatis ke sistem approval CARMEN.

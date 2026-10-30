@@ -388,7 +388,6 @@ export async function generateKelayakanExcelBuffer(
     { width: 19 }, // B (Approved)
     { width: 19 }, // C (Checked 2)
     { width: 19 }, // D (Checked 1)
-    { width: 19 }, // E (Prepared)
   ];
 
   wsSign.getRow(1).height = 15;
@@ -404,9 +403,8 @@ export async function generateKelayakanExcelBuffer(
   wsSign.getCell("B4").value = "Approved";
   wsSign.getCell("C4").value = "Checked 2";
   wsSign.getCell("D4").value = "Checked 1";
-  wsSign.getCell("E4").value = "Prepared";
 
-  ["B4", "C4", "D4", "E4"].forEach((cellRef) => {
+  ["B4", "C4", "D4"].forEach((cellRef) => {
     const c = wsSign.getCell(cellRef);
     c.font = { name: "Calibri", size: 11 };
     c.alignment = { horizontal: "center", vertical: "middle" };
@@ -417,16 +415,15 @@ export async function generateKelayakanExcelBuffer(
   wsSign.mergeCells("B5:B8");
   wsSign.mergeCells("C5:C8");
   wsSign.mergeCells("D5:D8");
-  wsSign.mergeCells("E5:E8");
 
   for (let r = 5; r <= 8; r++) {
-    for (const col of ["B", "C", "D", "E"]) {
+    for (const col of ["B", "C", "D"]) {
       wsSign.getCell(`${col}${r}`).border = thinBorder;
     }
   }
 
   // Base Export state: bottom row empty before approval
-  ["B9", "C9", "D9", "E9"].forEach((cellRef) => {
+  ["B9", "C9", "D9"].forEach((cellRef) => {
     const c = wsSign.getCell(cellRef);
     c.value = "";
     c.font = { name: "Calibri", size: 10 };
