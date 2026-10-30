@@ -1170,7 +1170,7 @@ export default function RencanaMenuEditorPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
                   Salin seluruh 6 slot komponen hidangan dari satu tanggal ke tanggal lain dalam rencana menu katering{" "}
-                  <strong>{plan.catering_nama}</strong> ({activeShift}).
+                  <strong>{plan.catering_nama || "Semua Katering (PT JAI)"}</strong> ({activeShift}).
                 </p>
 
                 <div>
@@ -1289,7 +1289,7 @@ export default function RencanaMenuEditorPage() {
             <div style={{ padding: "20px" }}>
               <p style={{ margin: "0 0 14px 0", fontSize: "13.5px", lineHeight: 1.6, color: "var(--text-secondary)" }}>
                 Anda akan mengajukan dokumen Rencana Menu Bulanan untuk katering{" "}
-                <strong style={{ color: "var(--text-primary)" }}>{plan.catering_nama}</strong> periode{" "}
+                <strong style={{ color: "var(--text-primary)" }}>{plan.catering_nama || "Semua Katering (PT JAI)"}</strong> periode{" "}
                 <strong style={{ color: "var(--text-primary)" }}>{plan.effective_menu_period}</strong> (Versi {plan.version}).
               </p>
 
