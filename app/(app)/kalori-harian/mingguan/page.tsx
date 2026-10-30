@@ -36,6 +36,7 @@ import { CateringSelect } from "@/components/CateringSelect";
 import { useToast } from "@/context/ToastContext";
 import { downloadExcelBuffer } from "@/lib/exportExcelKelayakan";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import { formatNumberID } from "@/lib/formatters";
 
@@ -845,21 +846,17 @@ function RekapMingguanContent() {
 
             <div>
               <label>TANGGAL MULAI</label>
-              <input
-                type="date"
+              <IndoDatePicker
                 value={rekapStart}
                 onChange={(e) => setRekapStart(e.target.value)}
-                style={{ textAlign: "center" }}
               />
             </div>
 
             <div>
               <label>TANGGAL SELESAI</label>
-              <input
-                type="date"
+              <IndoDatePicker
                 value={rekapEnd}
                 onChange={(e) => setRekapEnd(e.target.value)}
-                style={{ textAlign: "center" }}
               />
             </div>
 
@@ -1330,12 +1327,9 @@ function RekapMingguanContent() {
                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>
                       TANGGAL MULAI
                     </label>
-                    <input
-                      type="date"
+                    <IndoDatePicker
                       value={modalStartDate}
                       onChange={(e) => setModalStartDate(e.target.value)}
-                      className="select-input"
-                      style={{ textAlign: "center", width: "100%", height: 38 }}
                     />
                   </div>
 
@@ -1343,12 +1337,9 @@ function RekapMingguanContent() {
                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>
                       TANGGAL SELESAI
                     </label>
-                    <input
-                      type="date"
+                    <IndoDatePicker
                       value={modalEndDate}
                       onChange={(e) => setModalEndDate(e.target.value)}
-                      className="select-input"
-                      style={{ textAlign: "center", width: "100%", height: 38 }}
                     />
                   </div>
                 </div>
@@ -1446,15 +1437,15 @@ function RekapMingguanContent() {
 
                   {/* Input penambah tanggal libur */}
                   <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <input
-                      type="date"
-                      value={holidayInput}
-                      min={minMonthlyDateStr}
-                      max={maxMonthlyDateStr}
-                      onChange={(e) => setHolidayInput(e.target.value)}
-                      className="select-input"
-                      style={{ flex: 1, height: 36, fontSize: 13 }}
-                    />
+                    <div style={{ flex: 1 }}>
+                      <IndoDatePicker
+                        value={holidayInput}
+                        min={minMonthlyDateStr}
+                        max={maxMonthlyDateStr}
+                        onChange={(e) => setHolidayInput(e.target.value)}
+                        placeholder="Pilih tanggal libur"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleAddHoliday(holidayInput)}

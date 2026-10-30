@@ -43,6 +43,7 @@ import { downloadExcelBuffer } from "@/lib/exportExcelKelayakan";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import AuditSubnav from "@/components/AuditSubnav";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
 import { formatNumberID } from "@/lib/formatters";
@@ -521,23 +522,17 @@ export default function RiwayatAuditPage() {
 
             <div>
               <label>TANGGAL MULAI</label>
-              <input
-                type="date"
-                className="select-input"
+              <IndoDatePicker
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                style={{ width: "100%", height: 38 }}
               />
             </div>
 
             <div>
               <label>TANGGAL SELESAI</label>
-              <input
-                type="date"
-                className="select-input"
+              <IndoDatePicker
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                style={{ width: "100%", height: 38 }}
               />
             </div>
 

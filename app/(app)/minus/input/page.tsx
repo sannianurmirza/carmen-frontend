@@ -20,6 +20,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 import { parseNumberID, isValidDecimalInput } from "@/lib/formatters";
 
@@ -273,13 +274,10 @@ export default function InputMinusPage() {
               >
                 TANGGAL <span style={{ color: "var(--red)" }}>*</span>
               </label>
-              <input
-                type="date"
-                className="input-field"
+              <IndoDatePicker
                 value={tanggal}
                 onChange={(e) => setTanggal(e.target.value)}
                 required
-                style={{ width: "100%" }}
               />
             </div>
 

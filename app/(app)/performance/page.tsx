@@ -36,6 +36,7 @@ import {
   finalizePerformanceReportApi,
 } from "@/lib/api";
 import AuditCompletenessWarning from "@/components/AuditCompletenessWarning";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 const BULAN_OPTIONS = [
   { value: 1, label: "Januari" },
@@ -533,9 +534,8 @@ export default function PerformancePage() {
             <label htmlFor="input-tanggal-dibuat" className="perf-field-label">
               Tanggal dibuat
             </label>
-            <input
+            <IndoDatePicker
               id="input-tanggal-dibuat"
-              type="date"
               value={tanggalDibuat}
               onChange={(e) => setTanggalDibuat(e.target.value)}
               className="perf-input"

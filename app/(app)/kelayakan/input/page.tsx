@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 import { formatPercentID } from "@/lib/formatters";
 
@@ -537,11 +538,9 @@ export default function InputKelayakanPage() {
 
             <div>
               <label>TANGGAL</label>
-              <input
-                type="date"
+              <IndoDatePicker
                 value={tanggal}
                 onChange={(e) => setTanggal(e.target.value)}
-                style={{ textAlign: "center" }}
               />
             </div>
 

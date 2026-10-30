@@ -30,6 +30,7 @@ import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import { useToast } from "@/context/ToastContext";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { formatNumberID } from "@/lib/formatters";
 import ProtectedImage from "@/components/ProtectedImage";
 
@@ -412,12 +413,9 @@ export default function MinusRiwayatPage() {
               <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--text-muted)", marginBottom: 4, letterSpacing: "0.5px" }}>
                 TANGGAL MULAI
               </label>
-              <input
-                type="date"
-                className="input-field"
+              <IndoDatePicker
                 value={filterStart}
                 onChange={(e) => setFilterStart(e.target.value)}
-                style={{ width: "100%", padding: "6px 10px", fontSize: 13, textAlign: "center" }}
               />
             </div>
 
@@ -426,12 +424,9 @@ export default function MinusRiwayatPage() {
               <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--text-muted)", marginBottom: 4, letterSpacing: "0.5px" }}>
                 TANGGAL SELESAI
               </label>
-              <input
-                type="date"
-                className="input-field"
+              <IndoDatePicker
                 value={filterEnd}
                 onChange={(e) => setFilterEnd(e.target.value)}
-                style={{ width: "100%", padding: "6px 10px", fontSize: 13, textAlign: "center" }}
               />
             </div>
 

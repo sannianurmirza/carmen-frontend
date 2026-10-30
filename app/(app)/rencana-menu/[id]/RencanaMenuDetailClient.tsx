@@ -36,6 +36,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 const DAYS_HEADER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
@@ -830,8 +831,7 @@ export default function RencanaMenuEditorPage() {
                   <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, marginBottom: 5 }}>
                     Salin Dari Tanggal:
                   </label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     value={sourceCopyDate}
                     onChange={(e) => setSourceCopyDate(e.target.value)}
                     className="input-text"
@@ -843,8 +843,7 @@ export default function RencanaMenuEditorPage() {
                   <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, marginBottom: 5 }}>
                     Tempel ke Tanggal Tujuan:
                   </label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     value={targetCopyDate}
                     onChange={(e) => setTargetCopyDate(e.target.value)}
                     className="input-text"

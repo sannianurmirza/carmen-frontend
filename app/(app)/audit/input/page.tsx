@@ -40,6 +40,7 @@ import AuditSubnav from "@/components/AuditSubnav";
 import ProtectedImage from "@/components/ProtectedImage";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { formatDisplayDate } from "@/lib/audit";
 
 interface UnsavedFindingDraft {
@@ -869,27 +870,15 @@ export default function InputAuditPage() {
                 >
                   TANGGAL AUDIT <span style={{ color: "var(--red)" }}>*</span>
                 </label>
-                <input
+                <IndoDatePicker
                   id="input-tanggal-audit"
-                  type="date"
                   value={tanggal}
                   onChange={(e) => {
                     setTanggal(e.target.value);
                     if (validationError === "tanggal") setValidationError(null);
                   }}
                   disabled={creatingAudit}
-                  style={{
-                    width: "100%",
-                    height: "38px",
-                    borderRadius: "6px",
-                    border: validationError === "tanggal" ? "2px solid var(--red)" : "1px solid var(--border)",
-                    backgroundColor: "var(--card)",
-                    color: "var(--text)",
-                    padding: "0 12px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    outline: "none",
-                  }}
+                  isError={validationError === "tanggal"}
                 />
                 {validationError === "tanggal" && (
                   <p style={{ margin: "5px 0 0 0", fontSize: "11.5px", color: "var(--red)", fontWeight: 600 }}>

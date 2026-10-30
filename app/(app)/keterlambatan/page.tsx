@@ -34,6 +34,7 @@ import {
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 
 
@@ -717,13 +718,11 @@ export default function KeterlambatanPage() {
                     <label htmlFor="input-tanggal">
                       Tanggal <span style={{ color: "var(--red)" }}>*</span>
                     </label>
-                    <input
+                    <IndoDatePicker
                       id="input-tanggal"
-                      type="date"
                       value={formTanggal}
                       onChange={(e) => setFormTanggal(e.target.value)}
                       required
-                      style={{ textAlign: "center", height: 38 }}
                     />
                   </div>
 
@@ -1088,11 +1087,9 @@ export default function KeterlambatanPage() {
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                   Tanggal Mulai
                 </label>
-                <input
-                  type="date"
+                <IndoDatePicker
                   value={filterStartDate}
                   onChange={(e) => setFilterStartDate(e.target.value)}
-                  style={{ height: 38 }}
                 />
               </div>
 
@@ -1101,11 +1098,9 @@ export default function KeterlambatanPage() {
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                   Tanggal Selesai
                 </label>
-                <input
-                  type="date"
+                <IndoDatePicker
                   value={filterEndDate}
                   onChange={(e) => setFilterEndDate(e.target.value)}
-                  style={{ height: 38 }}
                 />
               </div>
 
@@ -1722,8 +1717,7 @@ export default function KeterlambatanPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
                     <label>Tanggal</label>
-                    <input
-                      type="date"
+                    <IndoDatePicker
                       value={editTanggal}
                       onChange={(e) => setEditTanggal(e.target.value)}
                       required

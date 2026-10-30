@@ -35,6 +35,7 @@ import {
   downloadExcelBuffer,
 } from "@/lib/exportExcelKelayakan";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { formatPercentID } from "@/lib/formatters";
 
 const ITEMS_PER_PAGE = 10;
@@ -722,21 +723,17 @@ export default function ExportKelayakanPage() {
 
                 <div>
                   <label>TANGGAL MULAI</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    style={{ textAlign: "center" }}
                   />
                 </div>
 
                 <div>
                   <label>TANGGAL SELESAI</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    style={{ textAlign: "center" }}
                   />
                 </div>
 
@@ -1389,19 +1386,9 @@ export default function ExportKelayakanPage() {
                       <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6, display: "block" }}>
                         TANGGAL MULAI
                       </label>
-                      <input
-                        type="date"
+                      <IndoDatePicker
                         value={modalStartDate}
                         onChange={(e) => setModalStartDate(e.target.value)}
-                        style={{
-                          width: "100%",
-                          height: 38,
-                          textAlign: "center",
-                          border: "1px solid var(--border-strong)",
-                          borderRadius: "var(--radius-sm)",
-                          fontSize: 13,
-                          background: "var(--card)",
-                        }}
                       />
                     </div>
 
@@ -1409,19 +1396,9 @@ export default function ExportKelayakanPage() {
                       <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 6, display: "block" }}>
                         TANGGAL SELESAI
                       </label>
-                      <input
-                        type="date"
+                      <IndoDatePicker
                         value={modalEndDate}
                         onChange={(e) => setModalEndDate(e.target.value)}
-                        style={{
-                          width: "100%",
-                          height: 38,
-                          textAlign: "center",
-                          border: "1px solid var(--border-strong)",
-                          borderRadius: "var(--radius-sm)",
-                          fontSize: 13,
-                          background: "var(--card)",
-                        }}
                       />
                     </div>
                   </div>

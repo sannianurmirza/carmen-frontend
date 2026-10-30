@@ -41,6 +41,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 import { formatNumberID } from "@/lib/formatters";
 
@@ -747,12 +748,9 @@ export default function KaloriMinusPage() {
             <label style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>
               Tanggal Mulai
             </label>
-            <input
-              type="date"
-              className="input-field"
+            <IndoDatePicker
               value={filterStart}
               onChange={(e) => setFilterStart(e.target.value)}
-              style={{ width: "100%", fontSize: 13, height: 38 }}
             />
           </div>
 
@@ -761,12 +759,9 @@ export default function KaloriMinusPage() {
             <label style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>
               Tanggal Selesai
             </label>
-            <input
-              type="date"
-              className="input-field"
+            <IndoDatePicker
               value={filterEnd}
               onChange={(e) => setFilterEnd(e.target.value)}
-              style={{ width: "100%", fontSize: 13, height: 38 }}
             />
           </div>
 

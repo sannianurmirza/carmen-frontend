@@ -50,6 +50,7 @@ import {
 import { normalizeCateringKalori } from "@/lib/punishmentNormalizers";
 import { useToast } from "@/context/ToastContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 const BULAN_LIST = [
   { value: 1, label: "Januari" },
@@ -1800,9 +1801,8 @@ export default function LaporanPunishmentPage() {
                 >
                   Tanggal mulai manual
                 </label>
-                <input
+                <IndoDatePicker
                   id="manual-start-date"
-                  type="date"
                   value={startDate}
                   onChange={(e) => handleStartDateChange(e.target.value)}
                   className="period-input"
@@ -1825,9 +1825,8 @@ export default function LaporanPunishmentPage() {
                 >
                   Tanggal selesai manual
                 </label>
-                <input
+                <IndoDatePicker
                   id="manual-end-date"
-                  type="date"
                   value={endDate}
                   onChange={(e) => handleEndDateChange(e.target.value)}
                   className="period-input"

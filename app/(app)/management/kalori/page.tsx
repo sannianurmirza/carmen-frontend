@@ -27,6 +27,7 @@ import {
   ManagementKaloriResponse,
   ManagementKaloriDailyResponse,
 } from "@/lib/api";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 const BULAN_NAMES = [
   "",
@@ -1099,9 +1100,8 @@ export default function ManagementKaloriPage() {
                   Tanggal
                 </label>
                 <div style={{ position: "relative", width: "100%" }}>
-                  <input
+                  <IndoDatePicker
                     id="filter-daily-tanggal"
-                    type="date"
                     aria-label="Pilih Tanggal Kalori"
                     value={draftDailyDate}
                     onChange={(e) => setDraftDailyDate(e.target.value)}

@@ -52,6 +52,7 @@ import {
   updateCatering,
   Catering,
 } from "@/lib/api";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 interface CustomSelectProps {
   id?: string;
@@ -2852,8 +2853,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
               <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">TANGGAL MULAI *</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     required
                     value={createForm.tanggal_mulai}
                     onChange={(e) => handleStartDateChange(e.target.value)}
@@ -2865,8 +2865,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                 </div>
                 <div className="form-group">
                   <label className="form-label">TANGGAL SELESAI *</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     required
                     value={createForm.tanggal_selesai}
                     onChange={(e) => handleEndDateChange(e.target.value)}
@@ -3074,8 +3073,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
               <div className="form-grid-2">
                 <div className="form-group">
                   <label className="form-label">TANGGAL MULAI *</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     required
                     value={editPeriodForm.tanggal_mulai}
                     onChange={(e) => handleEditStartDateChange(e.target.value)}
@@ -3087,8 +3085,7 @@ export default function RewardPunishmentView({ initialTab = "detail" }: { initia
                 </div>
                 <div className="form-group">
                   <label className="form-label">TANGGAL SELESAI *</label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     required
                     value={editPeriodForm.tanggal_selesai}
                     onChange={(e) => handleEditEndDateChange(e.target.value)}

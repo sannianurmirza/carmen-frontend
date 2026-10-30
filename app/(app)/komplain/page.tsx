@@ -44,6 +44,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import IndoDatePicker from "@/components/IndoDatePicker";
 import ProtectedImage from "@/components/ProtectedImage";
 import { useToast } from "@/context/ToastContext";
 import { formatIndoTimestamp } from "@/lib/formatters";
@@ -1188,30 +1189,12 @@ export default function KomplainPage() {
                 >
                   Tanggal <span style={{ color: "var(--red, #ef4444)" }}>*</span>
                 </label>
-                <input
+                <IndoDatePicker
                   id="input-tanggal"
-                  type="date"
                   value={formTanggal}
                   onChange={(e) => setFormTanggal(e.target.value)}
-                  style={{
-                    width: "100%",
-                    height: 38,
-                    border: "1px solid var(--border-strong, #cbd5e1)",
-                    borderRadius: "var(--radius-sm, 4px)",
-                    padding: "0 12px",
-                    fontSize: 13.5,
-                    fontFamily: "inherit",
-                    backgroundColor: "var(--card, #ffffff)",
-                    color: formTanggal ? "var(--text, #0f172a)" : "var(--text-muted, #94a3b8)",
-                    boxSizing: "border-box",
-                    outline: "none",
-                  }}
+                  required
                 />
-                {formTanggal && (
-                  <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted, #64748b)" }}>
-                    {formatIndoDate(formTanggal, true)}
-                  </p>
-                )}
               </div>
 
               {/* 2. Shift */}
@@ -1721,25 +1704,11 @@ export default function KomplainPage() {
                 >
                   Tanggal Mulai
                 </label>
-                <input
-                  type="date"
+                <IndoDatePicker
                   value={filterStartDate}
                   onChange={(e) => {
                     setFilterStartDate(e.target.value);
                     setCurrentPage(1);
-                  }}
-                  style={{
-                    width: "100%",
-                    height: 38,
-                    border: "1px solid var(--border-strong, #cbd5e1)",
-                    borderRadius: "var(--radius-sm, 4px)",
-                    padding: "0 10px",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    backgroundColor: "var(--card, #ffffff)",
-                    color: filterStartDate ? "var(--text, #0f172a)" : "var(--text-muted, #94a3b8)",
-                    boxSizing: "border-box",
-                    outline: "none",
                   }}
                 />
               </div>
@@ -1757,25 +1726,11 @@ export default function KomplainPage() {
                 >
                   Tanggal Selesai
                 </label>
-                <input
-                  type="date"
+                <IndoDatePicker
                   value={filterEndDate}
                   onChange={(e) => {
                     setFilterEndDate(e.target.value);
                     setCurrentPage(1);
-                  }}
-                  style={{
-                    width: "100%",
-                    height: 38,
-                    border: "1px solid var(--border-strong, #cbd5e1)",
-                    borderRadius: "var(--radius-sm, 4px)",
-                    padding: "0 10px",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    backgroundColor: "var(--card, #ffffff)",
-                    color: filterEndDate ? "var(--text, #0f172a)" : "var(--text-muted, #94a3b8)",
-                    boxSizing: "border-box",
-                    outline: "none",
                   }}
                 />
               </div>
@@ -3030,20 +2985,10 @@ export default function KomplainPage() {
                   <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 5 }}>
                     Tanggal <span style={{ color: "var(--red)" }}>*</span>
                   </label>
-                  <input
-                    type="date"
+                  <IndoDatePicker
                     value={editTanggal}
                     onChange={(e) => setEditTanggal(e.target.value)}
-                    style={{
-                      width: "100%",
-                      height: 38,
-                      border: "1px solid var(--border-strong, #cbd5e1)",
-                      borderRadius: "var(--radius-sm, 4px)",
-                      padding: "0 10px",
-                      fontSize: 13,
-                      fontFamily: "inherit",
-                      boxSizing: "border-box",
-                    }}
+                    required
                   />
                 </div>
 
@@ -3480,19 +3425,14 @@ export default function KomplainPage() {
                     <label htmlFor="weekly-start-date" className="weekly-modal-label">
                       TANGGAL MULAI <span className="label-required">*</span>
                     </label>
-                    <input
+                    <IndoDatePicker
                       id="weekly-start-date"
-                      type="date"
                       value={weeklyStartDate}
                       onChange={(e) => {
                         setWeeklyStartDate(e.target.value);
                         setWeeklyError(null);
                       }}
                       required
-                      className="weekly-modal-input"
-                      style={{
-                        color: weeklyStartDate ? "var(--text, #0f172a)" : "var(--text-muted, #94a3b8)",
-                      }}
                     />
                   </div>
 
@@ -3501,19 +3441,14 @@ export default function KomplainPage() {
                     <label htmlFor="weekly-end-date" className="weekly-modal-label">
                       TANGGAL SELESAI <span className="label-required">*</span>
                     </label>
-                    <input
+                    <IndoDatePicker
                       id="weekly-end-date"
-                      type="date"
                       value={weeklyEndDate}
                       onChange={(e) => {
                         setWeeklyEndDate(e.target.value);
                         setWeeklyError(null);
                       }}
                       required
-                      className="weekly-modal-input"
-                      style={{
-                        color: weeklyEndDate ? "var(--text, #0f172a)" : "var(--text-muted, #94a3b8)",
-                      }}
                     />
                   </div>
 

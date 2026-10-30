@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { ExportExcelButton } from "@/components/ExportExcelButton";
+import IndoDatePicker from "@/components/IndoDatePicker";
 
 
 // Definitions matching reference
@@ -1229,9 +1230,8 @@ export default function KebersihanKantinPage() {
             <div className="fl">
               <div className="f">
                 <label htmlFor="date">Tanggal Penilaian</label>
-                <input
+                <IndoDatePicker
                   id="date"
-                  type="date"
                   value={dateVal}
                   onChange={(e) => setDateVal(e.target.value)}
                 />
