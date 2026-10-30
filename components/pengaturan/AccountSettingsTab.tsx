@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
   changePasswordApi,
+  getBaseUrl,
   getPublicUrl,
   getUserSignatureApi,
   replaceMySignatureQrApi,
@@ -616,16 +617,15 @@ export default function AccountSettingsTab() {
                 {signatureLoading ? (
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Memuat QR...</div>
                 ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     id="my-signature-qr-preview"
-                    src={`/catering-ir/api/users/${user?.id}/signature/qr-image?t=${qrTimestamp}`}
+                    src={`${getBaseUrl()}/users/${user?.id}/signature/qr-image?t=${qrTimestamp}`}
                     alt="QR Tanda Tangan Saya"
                     width={130}
                     height={130}
                     style={{ objectFit: "contain", borderRadius: 4 }}
                     onError={(e) => {
-                      (e.target as any).style.display = 'none';
+                      console.warn("Gagal memuat gambar QR Tanda Tangan", e);
                     }}
                   />
                 )}
@@ -748,7 +748,7 @@ export default function AccountSettingsTab() {
 
                 <a
                   id="btn-download-qr"
-                  href={`/catering-ir/api/users/${user?.id}/signature/qr-image?t=${qrTimestamp}`}
+                  href={`${getBaseUrl()}/users/${user?.id}/signature/qr-image?t=${qrTimestamp}`}
                   download={`QR_Signature_${user?.username || 'carmen'}.png`}
                   target="_blank"
                   rel="noreferrer"

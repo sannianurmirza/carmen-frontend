@@ -4345,9 +4345,13 @@ export const activateMenuPlanApi = (id: number): Promise<MonthlyMenuPlanSummary>
   });
 };
 
-export const submitMenuPlanApprovalApi = (id: number): Promise<MonthlyMenuPlanSummary> => {
+export const submitMenuPlanApprovalApi = (
+  id: number,
+  payload?: { excel_base64?: string }
+): Promise<MonthlyMenuPlanSummary> => {
   return request<MonthlyMenuPlanSummary>(`/menu-plans/${id}/submit-approval`, {
     method: "POST",
+    body: payload ? JSON.stringify(payload) : undefined,
   });
 };
 

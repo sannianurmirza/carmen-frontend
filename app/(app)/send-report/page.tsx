@@ -32,6 +32,7 @@ import {
 import {
   getSendReportConfig,
   submitApprovalRequest,
+  getBaseUrl,
   SendReportConfigResponse,
   SendReportResponse,
   DeliveryType,
@@ -903,7 +904,7 @@ export default function SendReportPage() {
 
                 <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <a
-                    href={`/catering-ir/api/approvals/${successResult.approval_id || successResult.report_id}/file`}
+                    href={`${getBaseUrl()}/approvals/${successResult.approval_id || successResult.report_id}/file`}
                     download
                     className="btn btn-primary"
                     style={{

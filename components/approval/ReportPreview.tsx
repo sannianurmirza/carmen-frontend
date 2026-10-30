@@ -37,6 +37,7 @@ interface ParsedCell {
   hiddenByMerge?: boolean;
   bgColor?: string;
   textColor?: string;
+  imageSrc?: string;
 }
 
 interface ParsedSheet {
@@ -176,6 +177,35 @@ export default function ReportPreview({
             const rawModel = (ws as any).model;
             const merges: string[] = rawModel?.merges || [];
 
+            // Extract embedded images from worksheet (e.g. stamped QR signatures)
+            const imageMap = new Map<string, string>(); // "row,col" -> base64 dataUrl
+            try {
+              const wsImages = ws.getImages ? ws.getImages() : [];
+              for (const img of wsImages) {
+                if (img && img.imageId !== undefined) {
+                  const imgData = (workbook as any).getImage(img.imageId);
+                  if (imgData && imgData.buffer) {
+                    let binary = "";
+                    const bytes = new Uint8Array(imgData.buffer);
+                    const len = bytes.byteLength;
+                    for (let b = 0; b < len; b++) {
+                      binary += String.fromCharCode(bytes[b]);
+                    }
+                    const base64 = window.btoa(binary);
+                    const ext = imgData.extension || "png";
+                    const dataUrl = `data:image/${ext};base64,${base64}`;
+
+                    // tl range is 0-indexed: tl.row, tl.col
+                    const tlRow = Math.floor(img.range?.tl?.row ?? 0) + 1;
+                    const tlCol = Math.floor(img.range?.tl?.col ?? 0) + 1;
+                    imageMap.set(`${tlRow},${tlCol}`, dataUrl);
+                  }
+                }
+              }
+            } catch (imgErr) {
+              console.warn("[ReportPreview] Could not extract sheet images:", imgErr);
+            }
+
             // Pre-calculate merge spans
             const mergeLookup = new Map<string, { rowSpan: number; colSpan: number }>();
             const skipCoords = new Set<string>();
@@ -250,6 +280,8 @@ export default function ReportPreview({
                   textColor = convertArgbToRgba(cell.font.color.argb);
                 }
 
+                const imageSrc = imageMap.get(coord);
+
                 cellRow.push({
                   text,
                   align: (cell.alignment?.horizontal as any) || align || (isNumber ? "right" : "left"),
@@ -260,6 +292,7 @@ export default function ReportPreview({
                   colSpan: mergeInfo?.colSpan,
                   bgColor,
                   textColor,
+                  imageSrc,
                 });
               }
 
@@ -537,17 +570,38 @@ export default function ReportPreview({
                             colSpan={cell.colSpan && cell.colSpan > 1 ? cell.colSpan : undefined}
                             style={{
                               border: "1px solid #e2e8f0",
-                              padding: "4px 8px",
+                              padding: cell.imageSrc ? "6px 8px" : "4px 8px",
                               textAlign: cell.align || "left",
                               fontWeight: cell.bold ? 700 : "normal",
                               fontStyle: cell.italic ? "italic" : "normal",
                               backgroundColor: cell.bgColor || "transparent",
                               color: cell.textColor || "#1e293b",
-                              whiteSpace: "pre",
-                              minWidth: 72,
+                              whiteSpace: cell.imageSrc ? "normal" : "pre",
+                              minWidth: cell.imageSrc ? 90 : 72,
+                              verticalAlign: cell.imageSrc ? "middle" : "top",
                             }}
                           >
-                            {cell.text}
+                            {cell.imageSrc ? (
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={cell.imageSrc}
+                                  alt="Signature QR"
+                                  style={{
+                                    maxWidth: 90,
+                                    maxHeight: cell.rowSpan && cell.rowSpan > 1 ? 85 : 55,
+                                    objectFit: "contain",
+                                    display: "block",
+                                    margin: "0 auto",
+                                  }}
+                                />
+                                {cell.text && (
+                                  <span style={{ fontSize: 10, color: "var(--ap-ink2, #64748b)" }}>{cell.text}</span>
+                                )}
+                              </div>
+                            ) : (
+                              cell.text
+                            )}
                           </td>
                         );
                       })}

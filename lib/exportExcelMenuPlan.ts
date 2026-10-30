@@ -1,5 +1,17 @@
 import ExcelJS from "exceljs";
-import { MonthlyMenuPlanDetail, MenuItemResponse } from "@/lib/api";
+import { MonthlyMenuPlanDetail, MenuItemResponse, getBaseUrl } from "@/lib/api";
+
+async function fetchImageBuffer(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (res.ok) {
+      return await res.arrayBuffer();
+    }
+  } catch (e) {
+    console.warn("Gagal mengambil gambar QR untuk export excel:", e);
+  }
+  return null;
+}
 
 const INDONESIAN_DAYS = [
   "SENIN",
@@ -376,6 +388,28 @@ export async function generateMenuPlanExcelBuffer(
     C: isApproved ? "CAN" : "",
     D: isApproved ? "NIA" : "",
   };
+
+  // Embed QR signatures into ESign sheet when document is approved
+  if (isApproved) {
+    try {
+      const baseUrl = getBaseUrl();
+      const qrTargets = [
+        { cell: "D5:D8", userId: 17 }, // Checked 1 -> NIA
+        { cell: "C5:C8", userId: 19 }, // Checked 2 -> CAN
+        { cell: "B5:B8", userId: 20 }, // Approved  -> GA
+      ];
+
+      for (const t of qrTargets) {
+        const buf = await fetchImageBuffer(`${baseUrl}/users/${t.userId}/signature/qr-image`);
+        if (buf && buf.byteLength > 0) {
+          const imgId = workbook.addImage({ buffer: buf, extension: "png" });
+          wsSign.addImage(imgId, t.cell);
+        }
+      }
+    } catch (qrErr) {
+      console.warn("Gagal menyematkan QR code pada lembar ESign:", qrErr);
+    }
+  }
 
   ["B9", "C9", "D9"].forEach((cellRef) => {
     const col = cellRef[0];

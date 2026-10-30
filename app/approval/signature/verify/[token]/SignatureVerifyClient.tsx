@@ -17,6 +17,7 @@ import {
   History,
   AlertCircle,
 } from "lucide-react";
+import { getBaseUrl } from "@/lib/api";
 
 interface VerificationResponse {
   is_valid: boolean;
@@ -59,7 +60,7 @@ export default function SignatureVerificationPage() {
       setLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch(`/catering-ir/api/approval/signature/verify/${encodeURIComponent(token)}`);
+        const res = await fetch(`${getBaseUrl()}/approval/signature/verify/${encodeURIComponent(token)}`);
         if (!res.ok) {
           throw new Error(`Gagal memverifikasi tanda tangan (HTTP ${res.status}).`);
         }

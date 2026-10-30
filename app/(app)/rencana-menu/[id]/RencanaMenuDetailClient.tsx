@@ -456,7 +456,21 @@ export default function RencanaMenuEditorPage() {
       if (hasUnsavedChanges) {
         await handleSave();
       }
-      const res = await submitMenuPlanApprovalApi(plan.id);
+      let excelBase64: string | undefined;
+      try {
+        const { generateMenuPlanExcelBuffer } = await import("@/lib/exportExcelMenuPlan");
+        const buf = await generateMenuPlanExcelBuffer(plan);
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        excelBase64 = window.btoa(binary);
+      } catch (genErr) {
+        console.warn("Gagal membuat buffer Excel rencana menu saat submit approval:", genErr);
+      }
+
+      const res = await submitMenuPlanApprovalApi(plan.id, excelBase64 ? { excel_base64: excelBase64 } : undefined);
       showToast("Rencana menu berhasil diajukan untuk proses approval resmi PT JAI.", "success");
       setIsSubmitModalOpen(false);
       await loadPlanDetail();

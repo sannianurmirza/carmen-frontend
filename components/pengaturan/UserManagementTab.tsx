@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
   AuthUser,
+  getBaseUrl,
   getUsersApi,
   createUserApi,
   updateUserStatusApi,
@@ -1985,15 +1986,14 @@ export default function UserManagementTab() {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/catering-ir/api/users/${targetQrUser.id}/signature/qr-image`}
+                  src={`${getBaseUrl()}/users/${targetQrUser.id}/signature/qr-image`}
                   alt={`QR Tanda Tangan ${targetQrUser.nama}`}
                   width={176}
                   height={176}
                   style={{ objectFit: "contain", borderRadius: 6 }}
                   onError={(e) => {
-                    (e.target as any).style.display = 'none';
+                    console.warn("Gagal memuat QR pengguna", e);
                   }}
                 />
               </div>
