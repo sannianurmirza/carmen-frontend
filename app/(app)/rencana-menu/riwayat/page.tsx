@@ -1495,7 +1495,7 @@ export default function RencanaMenuRiwayatPage() {
                     style={{ width: "100%", height: 42, fontSize: 13 }}
                   >
                     <option value="all">
-                      ⭐ Semua Katering (Semua Vendor PT JAI) — Berlaku untuk Semua
+                      Semua Katering (Semua Vendor PT JAI) — Berlaku untuk Semua
                     </option>
                     {caterings.map((c) => (
                       <option key={c.id} value={c.id}>

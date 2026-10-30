@@ -4300,13 +4300,15 @@ export interface ActiveMenuQueryResponse {
 }
 
 export const getMenuPlansApi = (params?: {
-  catering_id?: number;
+  catering_id?: number | string | null;
   effective_year?: number;
   effective_month?: number;
   status?: string;
 }): Promise<MonthlyMenuPlanSummary[]> => {
   const query = new URLSearchParams();
-  if (params?.catering_id) query.set("catering_id", String(params.catering_id));
+  if (params?.catering_id !== undefined && params.catering_id !== null && params.catering_id !== "all" && params.catering_id !== "") {
+    query.set("catering_id", String(params.catering_id));
+  }
   if (params?.effective_year) query.set("effective_year", String(params.effective_year));
   if (params?.effective_month) query.set("effective_month", String(params.effective_month));
   if (params?.status) query.set("status", params.status);
