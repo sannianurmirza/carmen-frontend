@@ -200,8 +200,30 @@ export default function RiwayatAuditPage() {
           getAuditKriteria(),
         ]);
         setCaterings(cats);
-        setAllKriteria(kriteriaRes.all || []);
-        setGroupedKriteria(kriteriaRes.grouped || { A: {}, B: {} });
+        const kList: AuditKriteriaItem[] =
+          (kriteriaRes as any)?.all ||
+          (kriteriaRes as any)?.kriteria ||
+          (Array.isArray(kriteriaRes) ? kriteriaRes : []);
+        setAllKriteria(kList);
+
+        let grp = (kriteriaRes as any)?.grouped;
+        if (!grp || (!grp.A && !grp.B)) {
+          const gA: Record<string, AuditKriteriaItem[]> = {};
+          const gB: Record<string, AuditKriteriaItem[]> = {};
+          for (const item of kList) {
+            const sisi = (item.sisi || "A").toUpperCase();
+            const kat = item.kategori || "UMUM";
+            if (sisi === "B") {
+              if (!gB[kat]) gB[kat] = [];
+              gB[kat].push(item);
+            } else {
+              if (!gA[kat]) gA[kat] = [];
+              gA[kat].push(item);
+            }
+          }
+          grp = { A: gA, B: gB };
+        }
+        setGroupedKriteria(grp);
       } catch (err) {
         console.error("Gagal inisialisasi master data:", err);
       }

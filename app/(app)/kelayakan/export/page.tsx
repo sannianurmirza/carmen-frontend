@@ -29,6 +29,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import KelayakanLegendCard, { RATING_DESCRIPTIONS, RatingCategoryType } from "@/components/KelayakanLegendCard";
 import { useToast } from "@/context/ToastContext";
 import {
   generateKelayakanExcelBuffer,
@@ -181,18 +182,19 @@ function StarRating({
   value,
   max = 5,
   readOnly = true,
+  type = "kelayakan",
 }: {
   value: number;
   max?: number;
   readOnly?: boolean;
+  type?: RatingCategoryType;
 }) {
   const getLabel = (star: number) => {
-    if (star === 1) return "1 (Sangat Kurang)";
-    if (star === 2) return "2 (Kurang)";
-    if (star === 3) return "3 (Cukup)";
-    if (star === 4) return "4 (Baik)";
-    if (star === 5) return "5 (Sangat Baik)";
-    return "";
+    const desc = RATING_DESCRIPTIONS[type]?.[star];
+    if (desc) {
+      return `${star} (${desc})`;
+    }
+    return `Bintang ${star}`;
   };
 
   return (
@@ -200,6 +202,7 @@ function StarRating({
       <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
         {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
           const isFilled = star <= value;
+          const desc = RATING_DESCRIPTIONS[type]?.[star] || "";
           return (
             <div
               key={star}
@@ -209,7 +212,7 @@ function StarRating({
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              title={getLabel(star)}
+              title={`Bintang ${star}: ${desc}`}
             >
               <Star
                 size={18}
@@ -224,8 +227,9 @@ function StarRating({
       <span
         style={{
           fontSize: 12,
-          fontWeight: 600,
-          color: value > 0 ? "var(--text)" : "var(--text-muted)",
+          fontWeight: 700,
+          color: value > 0 ? (value >= 4 ? "#15803d" : value === 3 ? "#d97706" : "#dc2626") : "var(--text-muted)",
+          textAlign: "right",
         }}
       >
         {value > 0 ? getLabel(value) : "Belum diisi"}
@@ -1207,11 +1211,11 @@ export default function ExportKelayakanPage() {
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                               <div>
                                 <label style={{ fontSize: 10.5, marginBottom: 2 }}>KELAYAKAN</label>
-                                <StarRating value={(entry as any)[cat.kelayakanKey] || 0} readOnly />
+                                <StarRating type="kelayakan" value={(entry as any)[cat.kelayakanKey] || 0} readOnly />
                               </div>
                               <div>
                                 <label style={{ fontSize: 10.5, marginBottom: 2 }}>RASA</label>
-                                <StarRating value={(entry as any)[cat.rasaKey] || 0} readOnly />
+                                <StarRating type="rasa" value={(entry as any)[cat.rasaKey] || 0} readOnly />
                               </div>
                             </div>
                           </div>
@@ -1241,7 +1245,7 @@ export default function ExportKelayakanPage() {
                           </div>
                           <div>
                             <label style={{ fontSize: 10.5, marginBottom: 2 }}>KONDISI RANTANG</label>
-                            <StarRating value={entry.kondisi_rantang || 0} readOnly />
+                            <StarRating type="rantang" value={entry.kondisi_rantang || 0} readOnly />
                           </div>
                         </div>
                       </div>

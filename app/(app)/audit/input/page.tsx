@@ -108,6 +108,7 @@ export default function InputAuditPage() {
   // 5. Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterTab, setFilterTab] = useState<"all" | "A" | "B" | "findings">("all");
+  const [previewTab, setPreviewTab] = useState<"all" | "A" | "B">("all");
 
   // 6. Modals
   const [isNoFindingsModalOpen, setIsNoFindingsModalOpen] = useState<boolean>(false);
@@ -166,9 +167,10 @@ export default function InputAuditPage() {
     async function loadMasterKriteria() {
       try {
         setLoadingKriteria(true);
-        const res = await getAuditKriteria();
+        const res: any = await getAuditKriteria();
         if (isMounted) {
-          setAllKriteria(res.all || []);
+          const items = res?.all || res?.kriteria || (Array.isArray(res) ? res : []);
+          setAllKriteria(items);
         }
       } catch (err: any) {
         if (isMounted) {
@@ -239,7 +241,8 @@ export default function InputAuditPage() {
     const groups: CategoryGroup[] = [];
     const map = new Map<string, ExtendedKriteriaItem[]>();
 
-    for (const k of allKriteria) {
+    const sorted = [...allKriteria].sort((a, b) => a.id - b.id);
+    for (const k of sorted) {
       const sisi = (k.sisi || "A").toUpperCase() as "A" | "B";
       const kat = k.kategori || "UMUM";
       const key = `${sisi}:::${kat}`;
@@ -268,6 +271,15 @@ export default function InputAuditPage() {
 
     return groups;
   }, [allKriteria]);
+
+  const countA = useMemo(
+    () => allKriteria.filter((k) => (k.sisi || "A").toUpperCase() === "A").length,
+    [allKriteria]
+  );
+  const countB = useMemo(
+    () => allKriteria.filter((k) => (k.sisi || "").toUpperCase() === "B").length,
+    [allKriteria]
+  );
 
   // Unique violated criteria count
   const violatedCriteriaCount = useMemo(() => {
@@ -966,6 +978,173 @@ export default function InputAuditPage() {
               </button>
             </div>
           </div>
+
+          {/* Pratinjau Master Checklist 54 Kriteria (Form A & Form B) */}
+          <div
+            style={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "20px 24px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+              <div>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "var(--text)" }}>
+                  Daftar Master 54 Kriteria Audit Dapur (Form A &amp; Form B)
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: "3px 0 0 0" }}>
+                  Standar penilaian audit fisik dapur katering Yazaki. Formulir interaktif untuk pencatatan temuan akan aktif setelah Anda menekan tombol <strong>&quot;Mulai Audit&quot;</strong> di atas.
+                </p>
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--bg-subtle, #f8fafc)",
+                  padding: "2px",
+                  gap: "2px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("all")}
+                  style={{
+                    border: "none",
+                    backgroundColor: previewTab === "all" ? "var(--card)" : "transparent",
+                    color: previewTab === "all" ? "var(--text)" : "var(--text-muted)",
+                    padding: "5px 12px",
+                    borderRadius: "4px",
+                    fontSize: "11.5px",
+                    fontWeight: previewTab === "all" ? 700 : 500,
+                    cursor: "pointer",
+                    boxShadow: previewTab === "all" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  }}
+                >
+                  Semua ({allKriteria.length || 54})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("A")}
+                  style={{
+                    border: "none",
+                    backgroundColor: previewTab === "A" ? "var(--card)" : "transparent",
+                    color: previewTab === "A" ? "var(--text)" : "var(--text-muted)",
+                    padding: "5px 12px",
+                    borderRadius: "4px",
+                    fontSize: "11.5px",
+                    fontWeight: previewTab === "A" ? 700 : 500,
+                    cursor: "pointer",
+                    boxShadow: previewTab === "A" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  }}
+                >
+                  Form A ({countA || 27})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("B")}
+                  style={{
+                    border: "none",
+                    backgroundColor: previewTab === "B" ? "var(--card)" : "transparent",
+                    color: previewTab === "B" ? "var(--text)" : "var(--text-muted)",
+                    padding: "5px 12px",
+                    borderRadius: "4px",
+                    fontSize: "11.5px",
+                    fontWeight: previewTab === "B" ? 700 : 500,
+                    cursor: "pointer",
+                    boxShadow: previewTab === "B" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  }}
+                >
+                  Form B ({countB || 27})
+                </button>
+              </div>
+            </div>
+
+            {loadingKriteria ? (
+              <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)" }}>
+                <div className="spinner-sm" style={{ margin: "0 auto 8px" }} />
+                <span style={{ fontSize: "12.5px" }}>Memuat master kriteria audit...</span>
+              </div>
+            ) : groupedCategories.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: "12.5px" }}>
+                Tidak ada kriteria yang termuat.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {groupedCategories
+                  .filter((g) => (previewTab === "all" ? true : g.sisi === previewTab))
+                  .map((g) => (
+                    <div
+                      key={`preview-${g.sisi}-${g.kategori}`}
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "8px 14px",
+                          backgroundColor: "var(--bg-subtle, #f8fafc)",
+                          borderBottom: "1px solid var(--border)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              backgroundColor: g.sisi === "A" ? "#eff6ff" : "#faf5ff",
+                              color: g.sisi === "A" ? "#1d4ed8" : "#7e22ce",
+                              border: g.sisi === "A" ? "1px solid #bfdbfe" : "1px solid #e9d5ff",
+                            }}
+                          >
+                            {g.sisiLabel}
+                          </span>
+                          <span style={{ color: "var(--text)" }}>{formatCategoryDisplay(g.kategori)}</span>
+                        </div>
+                        <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+                          {g.items.length} Kriteria
+                        </span>
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                        <tbody>
+                          {g.items.map((item, idx) => (
+                            <tr
+                              key={item.id}
+                              style={{
+                                borderBottom: idx === g.items.length - 1 ? "none" : "1px solid var(--border)",
+                              }}
+                            >
+                              <td style={{ width: "36px", padding: "6px 12px", textAlign: "center", color: "var(--text-muted)", fontWeight: 700 }}>
+                                {idx + 1}
+                              </td>
+                              <td style={{ width: "180px", padding: "6px 12px", fontWeight: 600, color: "var(--text)" }}>
+                                {item.material || "-"}
+                              </td>
+                              <td style={{ padding: "6px 12px", color: "var(--text-secondary)" }}>
+                                {item.deskripsi}
+                              </td>
+                              <td style={{ width: "80px", padding: "6px 12px", textAlign: "center", color: "var(--text-muted)", fontWeight: 600 }}>
+                                {item.point} Poin
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1347,7 +1526,7 @@ export default function InputAuditPage() {
                     boxShadow: filterTab === "A" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   }}
                 >
-                  Form A (27)
+                  Form A ({countA || 27})
                 </button>
                 <button
                   type="button"
@@ -1364,7 +1543,7 @@ export default function InputAuditPage() {
                     boxShadow: filterTab === "B" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   }}
                 >
-                  Form B (27)
+                  Form B ({countB || 27})
                 </button>
                 <button
                   type="button"
@@ -1440,7 +1619,23 @@ export default function InputAuditPage() {
 
           {/* CHECKLIST KRITERIA AKTUAL (54 KRITERIA) */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {filteredCategories.length === 0 ? (
+            {loadingKriteria ? (
+              <div
+                style={{
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: "40px 20px",
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div className="spinner-sm" style={{ margin: "0 auto 8px" }} />
+                <p style={{ margin: 0, fontSize: "13.5px", fontWeight: 600 }}>
+                  Memuat daftar 54 kriteria audit dapur...
+                </p>
+              </div>
+            ) : filteredCategories.length === 0 ? (
               <div
                 style={{
                   backgroundColor: "var(--card)",
@@ -1453,8 +1648,61 @@ export default function InputAuditPage() {
               >
                 <Info size={24} style={{ margin: "0 auto 8px" }} />
                 <p style={{ margin: 0, fontSize: "13.5px", fontWeight: 600 }}>
-                  Tidak ada kriteria yang sesuai dengan filter atau kata kunci pencarian.
+                  {allKriteria.length === 0
+                    ? "Daftar kriteria audit belum termuat dari server."
+                    : searchQuery
+                    ? `Tidak ada kriteria yang sesuai dengan kata kunci "${searchQuery}".`
+                    : filterTab === "findings"
+                    ? "Belum ada kriteria yang memiliki catatan temuan (✕)."
+                    : "Tidak ada kriteria yang sesuai dengan filter atau kata kunci pencarian."}
                 </p>
+                {allKriteria.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoadingKriteria(true);
+                      getAuditKriteria()
+                        .then((res: any) => {
+                          const list = res?.all || res?.kriteria || (Array.isArray(res) ? res : []);
+                          setAllKriteria(list);
+                        })
+                        .catch((err) => showError("Gagal memuat kriteria: " + (err?.message || "")))
+                        .finally(() => setLoadingKriteria(false));
+                    }}
+                    style={{
+                      marginTop: "12px",
+                      padding: "7px 16px",
+                      backgroundColor: "var(--red)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Muat Ulang Kriteria
+                  </button>
+                )}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      marginTop: "12px",
+                      padding: "6px 14px",
+                      backgroundColor: "var(--card)",
+                      color: "var(--text)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Reset Pencarian
+                  </button>
+                )}
               </div>
             ) : (
               filteredCategories.map((group) => {

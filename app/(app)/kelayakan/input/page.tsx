@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import HeaderMetaBoxes from "@/components/HeaderMetaBoxes";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import KelayakanLegendCard, { RATING_DESCRIPTIONS, RatingCategoryType } from "@/components/KelayakanLegendCard";
 import IndoDatePicker from "@/components/IndoDatePicker";
 import { useToast } from "@/context/ToastContext";
 import { formatPercentID } from "@/lib/formatters";
@@ -172,80 +173,85 @@ function StarRating({
   onChange,
   max = 5,
   readOnly = false,
+  type = "kelayakan",
 }: {
   value: number;
   onChange?: (val: number) => void;
   max?: number;
   readOnly?: boolean;
+  type?: RatingCategoryType;
 }) {
   const [hoverVal, setHoverVal] = useState<number | null>(null);
 
   const getLabel = (star: number) => {
-    if (star === 1) return "1 (Sangat Kurang)";
-    if (star === 2) return "2 (Kurang)";
-    if (star === 3) return "3 (Cukup)";
-    if (star === 4) return "4 (Baik)";
-    if (star === 5) return "5 (Sangat Baik)";
-    return "";
+    const desc = RATING_DESCRIPTIONS[type]?.[star];
+    if (desc) {
+      return `${star} (${desc})`;
+    }
+    return `Bintang ${star}`;
   };
 
   const activeVal = hoverVal !== null ? hoverVal : value;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
-          const isFilled = star <= activeVal;
-          return (
-            <button
-              key={star}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!readOnly && onChange) {
-                  onChange(star);
-                }
-              }}
-              onMouseEnter={() => !readOnly && setHoverVal(star)}
-              onMouseLeave={() => !readOnly && setHoverVal(null)}
-              disabled={readOnly}
-              style={{
-                background: "none",
-                border: "none",
-                padding: "4px 4px",
-                margin: 0,
-                cursor: readOnly ? "default" : "pointer",
-                transition: "transform 0.12s ease",
-                transform: !readOnly && activeVal === star ? "scale(1.15)" : "scale(1)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                touchAction: "manipulation",
-              }}
-              title={getLabel(star)}
-              aria-label={`Rating ${star} star`}
-            >
-              <Star
-                size={20}
-                fill={isFilled ? "#f59e0b" : "transparent"}
-                color={isFilled ? "#f59e0b" : "var(--text-muted)"}
-                strokeWidth={1.75}
-                style={{ pointerEvents: "none" }}
-              />
-            </button>
-          );
-        })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 3, width: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
+            const isFilled = star <= activeVal;
+            const desc = RATING_DESCRIPTIONS[type]?.[star] || "";
+            return (
+              <button
+                key={star}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!readOnly && onChange) {
+                    onChange(star);
+                  }
+                }}
+                onMouseEnter={() => !readOnly && setHoverVal(star)}
+                onMouseLeave={() => !readOnly && setHoverVal(null)}
+                disabled={readOnly}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: "4px 4px",
+                  margin: 0,
+                  cursor: readOnly ? "default" : "pointer",
+                  transition: "transform 0.12s ease",
+                  transform: !readOnly && activeVal === star ? "scale(1.15)" : "scale(1)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  touchAction: "manipulation",
+                }}
+                title={`Bintang ${star}: ${desc}`}
+                aria-label={`Rating ${star} star - ${desc}`}
+              >
+                <Star
+                  size={20}
+                  fill={isFilled ? "#f59e0b" : "transparent"}
+                  color={isFilled ? "#f59e0b" : "var(--text-muted)"}
+                  strokeWidth={1.75}
+                  style={{ pointerEvents: "none" }}
+                />
+              </button>
+            );
+          })}
+        </div>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: activeVal > 0 ? (activeVal >= 4 ? "#15803d" : activeVal === 3 ? "#d97706" : "#dc2626") : "var(--text-muted)",
+            textAlign: "right",
+          }}
+        >
+          {activeVal > 0 ? getLabel(activeVal) : "Belum diisi"}
+        </span>
       </div>
-      <span
-        style={{
-          fontSize: 12.5,
-          fontWeight: 600,
-          color: activeVal > 0 ? "var(--text)" : "var(--text-muted)",
-        }}
-      >
-        {activeVal > 0 ? getLabel(activeVal) : "Belum diisi"}
-      </span>
     </div>
   );
 }
@@ -483,6 +489,9 @@ export default function InputKelayakanPage() {
         </div>
       )}
 
+      {/* Panduan Keterangan Kategori Penilaian Bintang */}
+      <KelayakanLegendCard defaultExpanded={true} />
+
       {/* Panel Data Utama Katering & Tanggal */}
       <div className="panel" style={{ marginBottom: 24 }}>
         <div
@@ -661,16 +670,18 @@ export default function InputKelayakanPage() {
 
                   <div className="panel-body" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
                     <div>
-                      <label>KELAYAKAN</label>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>KELAYAKAN MENU &amp; PORSI</label>
                       <StarRating
+                        type="kelayakan"
                         value={draft.ratings[cat.kelayakanKey]}
                         onChange={(v) => updateDraftRating(draft.id, cat.kelayakanKey, v)}
                       />
                     </div>
 
                     <div>
-                      <label>RASA</label>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>KUALITAS RASA</label>
                       <StarRating
+                        type="rasa"
                         value={draft.ratings[cat.rasaKey]}
                         onChange={(v) => updateDraftRating(draft.id, cat.rasaKey, v)}
                       />
@@ -688,8 +699,9 @@ export default function InputKelayakanPage() {
               </div>
 
               <div className="panel-body" style={{ padding: 16 }}>
-                <label>KONDISI RANTANG &amp; KEBERSIHAN WADAH</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)" }}>KONDISI RANTANG &amp; KEBERSIHAN WADAH</label>
                 <StarRating
+                  type="rantang"
                   value={draft.ratings.kondisi_rantang}
                   onChange={(v) => updateDraftRating(draft.id, "kondisi_rantang", v)}
                 />

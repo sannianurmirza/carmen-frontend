@@ -1296,9 +1296,15 @@ export type AuditKriteriaItem = {
 
 export type AuditKriteriaResponse = {
   all: AuditKriteriaItem[];
-  grouped: {
+  kriteria?: AuditKriteriaItem[];
+  grouped?: {
     A: Record<string, AuditKriteriaItem[]>;
     B: Record<string, AuditKriteriaItem[]>;
+  };
+  max_points?: {
+    max_a: number;
+    max_b: number;
+    total_max: number;
   };
   maksimum_sisi_a?: number;
   maksimum_sisi_b?: number;
